@@ -11,7 +11,7 @@ declare global {
     namespace NodeJS {
         interface ProcessEnv {
             /**
-            dir to save configures, default is ./.config
+            dir to save configures, default is `./.config`
             */
             readonly CONFIG_HOME?: string
         }
@@ -56,7 +56,7 @@ class FSConfig<V extends {}> implements Config<V> {
         return json.data;
     }
     edit<K extends keyof V>(name: K | V, value?: V[K]): Promise<void> {
-        return this.synchronize(async () => {
+        return this.synchronize(() => {
             if (value === undefined) {
                 return this.editAll(name as V);
             } else {
@@ -78,8 +78,8 @@ class FSConfig<V extends {}> implements Config<V> {
         log.info('edit', { file, data });
         await fs.outputFile(file, byte);
     }
-    async drop<K extends keyof V>(name?: K): Promise<void> {
-        return this.synchronize(async () => {
+    drop<K extends keyof V>(name?: K): Promise<void> {
+        return this.synchronize(() => {
             if (name === undefined) {
                 return this.dropAll();
             } else {
