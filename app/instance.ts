@@ -1,7 +1,7 @@
-import './node'
-type Controller<R> = (app: import('express').Application) => R | PromiseLike<R>
-type Optional<V> = V | undefined
-type Log = {
+interface Controller<V> {
+    (app: import('express').Application): V | PromiseLike<V>
+}
+interface Log {
     error(e: Error): void
     info(e: string, a?: unknown): void
     info(e: unknown): void
@@ -24,8 +24,11 @@ declare global {
             readonly express: typeof import('express')
             readonly axios: typeof import('axios')
             emit(event: 'close'): boolean
+            emit(event: 'ready'): boolean
             once(event: 'close', cb: () => void): this
+            once(event: 'ready', cb: () => void): this
             on(event: 'close', cb: () => void): this
+            on(event: 'ready', cb: () => void): this
             object<R>(names: string[], factory: (ctx: Express.Application) => R): this
             object<R>(names: string[]): Optional<R>
             cid(): string
@@ -87,4 +90,18 @@ export async function instance() {
         },
     };
     return Object.assign(app, ctx);
+}
+import { RequestHandler } from 'express'
+{
+    const layer = require('express/lib/router/layer');
+    layer.prototype.handle_request = <RequestHandler>function (this: any, req, res, next) {
+        const fn = this.handle as RequestHandler;
+
+        if (fn.length > 3) {
+            return next();
+        }
+        Promise.resolve().then(function () {
+            return fn(req, res, next);
+        }).catch(next);
+    };
 }

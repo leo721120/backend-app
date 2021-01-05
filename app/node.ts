@@ -1,4 +1,7 @@
 declare global {
+    type Optional<V> = V | undefined
+}
+declare global {
     interface Fail<P, R> {
         /**
         milliseconds
@@ -33,10 +36,14 @@ Error[0] = function (e, fail) {
                 name: this.name,
                 //extends
                 retrydelay: this.retrydelay,
+                operation: this.operation,
+                resource: this.resource,
                 service: this.service,
                 status: this.status,
                 code: this.code,
                 id: this.id,
+                params: this.params,
+                reason: this.reason,
             };
         },
     });
