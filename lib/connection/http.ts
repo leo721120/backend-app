@@ -1,8 +1,8 @@
 declare global {
     namespace Express {
         interface Application {
-            connection(name: 'http', factory: (ctx: Express.Application) => HttpConnection): this
             connection(name: 'http'): HttpConnection
+            connection(name: 'http', factory: Express.Factory<HttpConnection>): this
         }
     }
 }
@@ -21,7 +21,7 @@ declare module 'axios' {
     }
 }
 import { AxiosRequestConfig, AxiosResponse, AxiosError, AxiosInstance } from 'axios'
-import { Connection } from './connection'
+import { Connection } from '@leo/lib/connection'
 interface HttpConnection extends Connection {
     fetch<R>(config: Omit<AxiosRequestConfig, 'log' | 'time'>): Promise<AxiosResponse<R>>
 }
@@ -45,9 +45,9 @@ class AxiosConnection implements HttpConnection {
     ) {
     }
 }
-import { Controller } from './instance'
+import { Module } from '@leo/app/instance'
 import { Agent } from 'http'
-export default Controller(async function (app) {
+export default Module(async function (app) {
     const pretty = function (data?: string | object | Buffer | NodeJS.ReadableStream) {
         if (typeof (data as NodeJS.ReadableStream | undefined)?.pipe === typeof Function) {
             return '<stream>';
@@ -57,10 +57,11 @@ export default Controller(async function (app) {
             return data;
         }
     };
+    const axios = await import('axios');
     const https = await import('https');
     const http = await import('http');
     const ctx = app as Express.Application;
-    const fetch = app.axios.default.create({
+    const fetch = axios.default.create({
         //maxContentLength: Infinity,
         //maxBodyLength: Infinity,
         adapter: require('axios/lib/adapters/http'),

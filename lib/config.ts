@@ -1,8 +1,8 @@
 declare global {
     namespace Express {
         interface Application {
-            config<R>(name: string, factory: (ctx: Express.Application) => Config<R>): this
-            config<R>(name: string): Config<R>
+            //config<R>(name: string): Config<R>
+            config<R>(name: string, factory: Express.Factory<Config<R>>): this
         }
     }
 }
@@ -15,12 +15,12 @@ export interface Config<V extends {}> {
     drop<K extends keyof V>(name: K): Promise<void>
     drop(): Promise<void>
 }
-import { Controller } from './instance'
-export default Controller(async function (app) {
+import { Module } from '@leo/app/instance'
+export default Module(async function (app) {
     Object.assign(app, <Express.Application>{
-        config<R>(name: string, factory?: (ctx: Express.Application) => Config<R>) {
-            return factory ? this.object(['config', name], factory) : this.object(['config', name]);
+        config<R>(name: string, factory?: Express.Factory<Config<R>>) {
+            const prefix = 'config';
+            return factory ? this.object([prefix, name], factory) : this.object([prefix, name]);
         },
     });
-    await app.load((await import('./config.fs')).default);
 });

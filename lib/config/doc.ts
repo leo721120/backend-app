@@ -1,13 +1,5 @@
-import { Controller } from './instance'
-import { Config } from './config'
 
 declare global {
-    namespace Express {
-        interface Application {
-            config(name: 'fs', factory: (ctx: Express.Application) => DocumentConfig): this
-            config(name: 'fs'): DocumentConfig
-        }
-    }
     namespace NodeJS {
         interface ProcessEnv {
             /**
@@ -16,7 +8,14 @@ declare global {
             readonly CONFIG_HOME?: string
         }
     }
+    namespace Express {
+        interface Application {
+            config(name: 'doc'): DocumentConfig
+            config(name: 'doc', factory: Express.Factory<DocumentConfig>): this
+        }
+    }
 }
+import { Config } from '@leo/lib/config'
 interface DocumentConfig {
     document<R>(...names: string[]): Config<R>
 }
@@ -115,8 +114,9 @@ class FSConfig<V extends {}> implements Config<V> {
     ) {
     }
 }
-export default Controller(async function (app) {
-    app.config('fs', function (ctx) {
+import { Module } from '@leo/app/instance'
+export default Module(async function (app) {
+    app.config('doc', function (ctx) {
         return <DocumentConfig>{
             document<R>(...names: string[]) {
                 names.unshift(process.env.CONFIG_HOME ?? './.config');

@@ -17,7 +17,7 @@ instance().then(async function (app) {
         {
             app.express.json;
 
-            const config = app.config('fs');
+            const config = app.config('doc');
 
             const document = config.document<{
                 foo?: string
@@ -60,7 +60,7 @@ instance().then(async function (app) {
             });
         }*/
         {
-            const database = app.database('sql');
+            const database = app.database('sequelize');
 
             await database.connect({
                 dialect: 'sqlite',
@@ -68,7 +68,7 @@ instance().then(async function (app) {
                 database: 'example',
             });
 
-            database.model('Sample', function (sequelize) {
+            database.model('Sample', async function (ctx) {
                 @database.Table({
                     modelName: 'Sample',
                     hooks: {
@@ -76,12 +76,12 @@ instance().then(async function (app) {
                 })
                 class SampleModel extends database.Model {
                     @database.Column({
-                        type: sequelize.Sequelize.DataTypes.STRING,
+                        type: ctx.sequelize.DataTypes.STRING,
                         primaryKey: true,
                     })
                     readonly id: string
                 };
-                return SampleModel.define(sequelize);
+                return SampleModel;
             });
 
             const model = await database.model('Sample');
