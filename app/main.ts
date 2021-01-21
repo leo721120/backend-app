@@ -1,5 +1,3 @@
-import { instance } from './domain'
-
 declare global {
     namespace NodeJS {
         interface ProcessEnv {
@@ -10,6 +8,7 @@ declare global {
         }
     }
 }
+import { instance } from './domain'
 instance().then(async function (app) {
     const log = app.log('app');
     {
@@ -131,6 +130,91 @@ instance().then(async function (app) {
                         url: '/sample/error',
                     });
                     log.info('example', {
+                        status: res.status,
+                        data: res.data,
+                    });
+                }
+            });
+        }
+        {
+            const data = {
+                foo: 'a',
+                bar: 1,
+            };
+            const schema = JSON.schema<typeof data>({
+                type: 'object',
+                required: ['bar'],
+                properties: {
+                    foo: {
+                        type: 'string',
+                        nullable: true,
+                    },
+                    bar: {
+                        type: 'number',
+                        maximum: 9,
+                    },
+                },
+            });
+            schema(data).error;
+            schema(data).throw();//throw if error exist
+            Promise.resolve().then(function() {
+                schema({
+                    foo: '',
+                    bar: 13,
+                }).throw();
+            }).catch(function(e: SchemaError) {
+                log.error(e);
+                //reference error type
+                e.errors?.[0].keyword;
+            });
+        }
+        {
+            const controller = app.controller('http');
+
+            controller.get('/foo/:id', {
+                schema() {
+                    return {
+                        summary: 'summary',
+                        description: 'description',
+                        operationId: 'operationId',
+                        parameters: [{
+                            in: 'path',
+                            name: 'id',
+                            description: 'params [id]',
+                            required: true,
+                            schema: {
+                                type: 'string',
+                            }
+                        }, {
+                            in: 'query',
+                            name: 'q',
+                            description: 'query [q]',
+                            schema: {
+                                type: 'string',
+                                minLength: 1,
+                            }
+                        }],
+                        responses: {
+                            200: {
+                                description: '200',
+                            },
+                        },
+                    };
+                },
+            }, function (req, res) {
+                res.status(200).end();
+                req;
+            });
+            app.once('ready', async function () {
+                const connection = app.connection('http');
+                const address = srv.address() as { port: number };
+                const host = `http://localhost:${address.port}`;
+                {
+                    const res = await connection.fetch({
+                        baseURL: host,
+                        url: '/foo/123',
+                    });
+                    log.info('foo', {
                         status: res.status,
                         data: res.data,
                     });

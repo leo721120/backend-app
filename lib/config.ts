@@ -20,7 +20,9 @@ export default Module(async function (app) {
     Object.assign(app, <Express.Application>{
         config<R>(name: string, factory?: Express.Factory<Config<R>>) {
             const prefix = 'config';
-            return factory ? this.object([prefix, name], factory) : this.object([prefix, name]);
+            return factory
+                ? this.object([prefix, name], factory)
+                : this.object([prefix, name]);
         },
     });
 });
