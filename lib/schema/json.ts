@@ -1,14 +1,19 @@
-import Ajv, { JSONSchemaType, ValidateFunction } from 'ajv'
+import Ajv, {
+    JSONSchemaType,
+    ValidateFunction,
+    ErrorObject,
+} from 'ajv'
+
 type Schema<V> = JSONSchemaType<V>
 type SchemaValidate<V> = {
-    (data: V | null | undefined): {
+    (data?: V | null | undefined): {
         throw(): never | void
         error?: SchemaError
     }
 }
 declare global {
     interface SchemaError extends Error {
-        errors: ValidateFunction['errors']
+        errors: ErrorObject[]
     }
     interface JSON {
         Ajv: typeof Ajv

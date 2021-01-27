@@ -1,4 +1,3 @@
-
 declare global {
     namespace NodeJS {
         interface ProcessEnv {
@@ -108,7 +107,7 @@ class FSConfig<V extends {}> implements Config<V> {
     constructor(
         private ctx: Express.Application,
         names: string[],
-        private log = ctx.log('fs'),
+        private log = ctx.log('cnf'),
         private file = names.join('/'),
         private fs = require('fs-extra') as typeof import('fs-extra'),
     ) {
@@ -116,6 +115,7 @@ class FSConfig<V extends {}> implements Config<V> {
 }
 import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
+    console.assert(app.config);
     app.config('doc', function (ctx) {
         return <DocumentConfig>{
             document<R>(...names: string[]) {

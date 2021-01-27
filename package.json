@@ -34,6 +34,7 @@
   "dependencies": {
     "@hapi/joi": "^17.1.1",
     "@leo/app": "file:./app",
+    "@leo/ctx": "file:./ctx",
     "@leo/lib": "file:./lib",
     "ajv": "^7.0.3",
     "axios": "^0.21.1",
@@ -43,5 +44,25 @@
     "fs-extra": "^9.0.1",
     "helmet": "^4.3.1",
     "sequelize": "^6.3.5"
+  },
+  "jest": {
+    "cacheDirectory": ".jest",
+    "testEnvironment": "node",
+    "testTimeout": 30000,
+    "testMatch": [
+      "**/?(*.)+(spec|test).[j]s?(x)"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/node_modules/",
+      "<rootDir>/.temp/"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 50,
+        "functions": 50,
+        "lines": 60,
+        "statements": 50
+      }
+    }
   }
 }

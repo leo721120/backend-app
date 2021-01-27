@@ -23,7 +23,7 @@ import {
 interface ModelFactory<M extends Model> {
     (ctx: Express.Application): Promise<StaticModel<M>>
 }
-export type SequelizeModel<V = any> = Model<V> & V
+export type SequelizeModel<V = {}> = Model<V> & V
 export type StaticModel<M extends Model> = typeof Model & {
     new(): M
 }
@@ -114,7 +114,7 @@ class SequelizeORM implements SequelizeDatabase {
         private ctx: Express.Application,
     ) {
     }
-    private sequelize?: Promise<Sequelize>;
+    private sequelize?: Promise<Sequelize>
     private factory: {
         [name: string]: ModelFactory<Model>
     }

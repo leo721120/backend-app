@@ -32,6 +32,8 @@ interface Log {
     info(e: unknown): void
 }
 declare global {
+    type Optional<V> = V | undefined
+    
     namespace Express {
         interface Factory<V> {
             (ctx: Express.Application): V

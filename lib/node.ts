@@ -1,5 +1,4 @@
 declare global {
-    type Optional<V> = V | undefined
 }
 declare global {
     interface Fail<P, R> {
@@ -47,22 +46,6 @@ Error[0] = function (e, fail) {
             };
         },
     });
-};
-declare global {
-    interface ObjectConstructor {
-        /**
-        convert object keys to lowercase
-        */
-        lowercase<V extends {}>(o?: V): V | undefined
-    }
-}
-Object.lowercase = function (o) {
-    if (!o) return o;
-    const copy = {} as typeof o;
-    for (const i in o) {
-        copy[i.toLowerCase() as typeof i] = o[i];
-    }
-    return copy;
 };
 export {
 }

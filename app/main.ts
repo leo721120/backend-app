@@ -13,44 +13,6 @@ instance().then(async function (app) {
     const log = app.log('app');
     {
         //application logic...
-        {
-            app.express.json;
-
-            const config = app.config('doc');
-
-            const document = config.document<{
-                foo?: string
-            }>('abc', 'def');
-
-            await document.find();
-
-            await document.find('foo');
-
-            await document.find('foo', 'default');
-
-            await document.edit('foo', 'xx');
-
-            await document.edit({ foo: 'a' });
-
-            await document.drop('foo');
-
-            await document.drop();
-        }
-        {
-            const connection = app.connection('http');
-
-            await connection.fetch({
-                url: 'https://google.com'
-            });
-
-            await connection.fetch({
-                service: 'test',
-                timeout: 1000,
-                url: '127.0.0.2',
-            }).catch(function (e) {
-                log.error(e);
-            });
-        }
         /*{
             const connection = app.connection('ws');
 
@@ -66,36 +28,25 @@ instance().then(async function (app) {
                 storage: ':memory:',
                 database: 'example',
             });
-
-            database.model('Sample', async function (ctx) {
-                @database.Table({
-                    modelName: 'Sample',
-                    hooks: {
-                    },
-                })
-                class SampleModel extends database.Model {
-                    @database.Column({
-                        type: ctx.sequelize.DataTypes.STRING,
-                        primaryKey: true,
-                    })
-                    readonly id: string
-                };
-                return SampleModel;
+            app.database('sequelize', function () {
+                return database;
             });
 
-            const model = await database.model('Sample');
+            const service = app.service('User');
 
-            await model.build({
-                id: 'aaabbbccc',
-            }).save();
-
-            const res = await model.findOne({
+            const collection = service.collection({
+                limit: 13,
+                offset: 14,
                 where: {
-                    id: 'aaabbbccc',
-                },
+                    id: 's',
+                    name: ['aa', 'bb'],
+                    ///cc: 'a',
+                }
             });
 
-            res?.toJSON();
+            const list = await collection.find();
+
+            list[0]?.id;
         }
         {
             app.get('/sample', function (_, res) {
@@ -134,38 +85,6 @@ instance().then(async function (app) {
                         data: res.data,
                     });
                 }
-            });
-        }
-        {
-            const data = {
-                foo: 'a',
-                bar: 1,
-            };
-            const schema = JSON.schema<typeof data>({
-                type: 'object',
-                required: ['bar'],
-                properties: {
-                    foo: {
-                        type: 'string',
-                        nullable: true,
-                    },
-                    bar: {
-                        type: 'number',
-                        maximum: 9,
-                    },
-                },
-            });
-            schema(data).error;
-            schema(data).throw();//throw if error exist
-            Promise.resolve().then(function() {
-                schema({
-                    foo: '',
-                    bar: 13,
-                }).throw();
-            }).catch(function(e: SchemaError) {
-                log.error(e);
-                //reference error type
-                e.errors?.[0].keyword;
             });
         }
         {
