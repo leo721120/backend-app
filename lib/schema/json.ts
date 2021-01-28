@@ -12,13 +12,16 @@ type SchemaValidate<V> = {
     }
 }
 declare global {
-    interface SchemaError extends Error {
-        errors: ErrorObject[]
-    }
     interface JSON {
         Ajv: typeof Ajv
         ajv: Ajv
         schema<R>(define: Schema<R>): Schema<R> & SchemaValidate<R>
+    }
+    interface SchemaError extends Error {
+        name: 'SchemaError'
+        code: ErrorCode.MalformedData
+        status: 400
+        details: ErrorObject[]
     }
 }
 import { Module } from '@leo/app/instance'
@@ -32,8 +35,12 @@ export default Module(async function () {
         } = function (data) {
             const res = validate.compile();
             const err = function () {
-                return Object.assign(Error(res.errors?.[0].message), <SchemaError>{
-                    errors: res.errors,
+                return Error.General<SchemaError>({
+                    message: 'malformed data',
+                    name: 'SchemaError',
+                    code: 'MalformedData',
+                    status: 400,
+                    details: res.errors ?? [],
                 });
             };
             if (res(data)) return {

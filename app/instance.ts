@@ -33,13 +33,13 @@ interface Log {
 }
 declare global {
     type Optional<V> = V | undefined
-    
+
     namespace Express {
         interface Factory<V> {
             (ctx: Express.Application): V
         }
         interface Request {
-            ctx(): Express.Application
+            ctx(): Omit<Express.Application, 'emit' | 'once' | 'on'>
             cid(): string
             log(): Log
             //ranges(maxsize: number): Range[]
@@ -165,15 +165,15 @@ export async function instance() {
                     };
                     req.ctx = function () {
                         const cid = req.cid;
-                        const ctx = {
-                            ...req.app,
+                        const obj = {
+                            ...ctx,
                             log,
                             cid,
                         };
                         req.ctx = function () {
-                            return ctx;
+                            return obj;
                         };
-                        return ctx;
+                        return obj;
                     };
                     res.once('finish', function () {
                         const elapse = new Date().getTime() - now.getTime();

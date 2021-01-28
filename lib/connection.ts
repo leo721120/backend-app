@@ -12,9 +12,10 @@ import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
     Object.assign(app, <Express.Application>{
         connection(name: string, factory?: Express.Factory<Connection>) {
+            const prefix = 'connection';
             return factory
-                ? this.object(['connection', name], factory)
-                : this.object(['connection', name]);
+                ? this.object([prefix, name], factory)
+                : this.object([prefix, name]);
         },
     });
 });

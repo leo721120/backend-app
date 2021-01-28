@@ -2,10 +2,16 @@ import { User } from '@leo/ctx/user/schema'
 import { FindOptions } from 'sequelize'
 
 interface Collection<V extends User> {
-    list(): Promise<{ list: V[], total: number }>
-    find(): Promise<V[]>
+    enum(): Promise<{ list: V[], total: number }>
+    list(): Promise<V[]>
     size(): Promise<number>
     drop(): Promise<number>
+}
+interface Entity<V extends User> {
+    find(): Promise<V | undefined>
+    data(): Promise<V>
+    edit(data: Partial<V>): Promise<void>
+    drop(): Promise<0 | 1>
 }
 interface Service {
     collection<R extends User>(options: FindOptions<R>): Collection<R>
@@ -17,12 +23,18 @@ declare global {
         }
     }
 }
-class UserService<V extends User> implements Service, Collection<V> {
+interface UserNotFound extends Error {
+    name: 'UserNotFound'
+    code: ErrorCode.NotFound
+    status: 404
+    params: Pick<FindOptions<User>, 'where'>
+}
+class UserService<V extends User> implements Service, Collection<V>, Entity<V> {
     collection<R extends User>(options: FindOptions<R>): Collection<R> {
         this.options = options as {};
         return this as unknown as UserService<R>;
     }
-    async list(): Promise<{ list: V[], total: number }> {
+    async enum(): Promise<{ list: V[], total: number }> {
         const model = await this.model.user;
         const { rows, count } = await model.findAndCountAll({
             ...this.options,
@@ -32,7 +44,7 @@ class UserService<V extends User> implements Service, Collection<V> {
             total: count,
         };
     }
-    async find(): Promise<V[]> {
+    async list(): Promise<V[]> {
         const model = await this.model.user;
         const list = await model.findAll({
             ...this.options,
@@ -46,16 +58,39 @@ class UserService<V extends User> implements Service, Collection<V> {
         });
         return size;
     }
-    async drop(): Promise<number> {
+    async find(): Promise<V | undefined> {
+        const model = await this.model.user;
+        const item = await model.findOne({
+            ...this.options,
+        });
+        return item as unknown as V;
+    }
+    async data(): Promise<V> {
+        const item = await this.find();
+        if (!item) throw Error.General<UserNotFound>({
+            message: 'user not found',
+            name: 'UserNotFound',
+            code: 'NotFound',
+            status: 404,
+            params: { where: this.options.where },
+        });
+        return item;
+    }
+    async edit(data: Partial<V>): Promise<void> {
+        data;
+    }
+    async drop(): Promise<0> {
         const model = await this.model.user;
         const size = await model.destroy({
             ...this.options,
         });
-        return size;
+        return size as 0;
     }
     constructor(
         private ctx: Express.Application,
-        private options: FindOptions<V>,
+        private options: FindOptions<V> & {
+            only1?: true
+        },
     ) {
     }
     private model = {

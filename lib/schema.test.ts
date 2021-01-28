@@ -1,9 +1,9 @@
 describe('schema', function () {
-    beforeAll(function() {
+    beforeAll(function () {
         jest.clearAllMocks();
         jest.spyOn(console, 'info').mockImplementation();
     });
-    afterAll(function() {
+    afterAll(function () {
         jest.clearAllMocks();
     });
     describe('json', function () {
@@ -31,16 +31,16 @@ describe('schema', function () {
             });
             schema(data).error;
             schema(data).throw();//throw if error exist
-            Promise.resolve().then(function() {
+            Promise.resolve().then(function () {
                 schema({
                     foo: '',
                     bar: 13,
                 }).throw();
-            }).catch(function(e: SchemaError) {
+            }).catch(function (e: SchemaError) {
                 jest.spyOn(console, 'error').mockImplementation();
                 log.error(e);
                 //reference error type
-                e.errors?.[0].keyword;
+                e.details[0]?.keyword;
             });
         });
     });

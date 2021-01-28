@@ -25,6 +25,27 @@ import { Connection } from '@leo/lib/connection'
 interface HttpConnection extends Connection {
     fetch<R>(config: Omit<AxiosRequestConfig, 'log' | 'time'>): Promise<AxiosResponse<R>>
 }
+interface FetchError extends Error {
+    name: 'FetchError'
+    code?: ErrorCode.GatewayTimeout | string
+    status: 504 | 502 | number
+    params: {
+        method?: string
+        baseURL?: string
+        url?: string
+        params: object
+        headers: object
+        timeout?: number
+        maxRedirects?: number
+        maxBodyLength?: number
+        maxContentLength?: number
+        data?: string | object
+    }
+    details: {
+        headers: object
+        data?: string | object
+    }
+}
 class AxiosConnection implements HttpConnection {
     fetch<R>(params: AxiosRequestConfig): Promise<AxiosResponse<R>> {
         const config = { ...params };
@@ -120,18 +141,18 @@ export default Module(async function (app) {
         });
         return res;
     }, function (e: AxiosError) {
-        const err = Error[0](e, {
+        const err = Error.General<FetchError>({
+            message: e.message,
+            name: 'FetchError',
+            stack: e.stack,
             retrydelay: e.response?.headers?.['retry-after'],
-            operation: e.config.method,
-            resource: e.config.url,
-            service: e.config.service,
+            resource: e.config.service,
             status: e.response?.status ?? 502,
             code: e.response?.statusText ?? e.code,
-            id: e.config.cid,
             params: {
                 method: e.config.method,
-                url: e.config.url,
                 baseURL: e.config.baseURL,
+                url: e.config.url,
                 params: e.config.params,
                 headers: e.config.headers,
                 timeout: e.config.timeout,
@@ -140,15 +161,15 @@ export default Module(async function (app) {
                 maxContentLength: e.config.maxContentLength,
                 data: pretty(e.config.data),
             },
-            reason: {
+            details: {
                 headers: e.response?.headers,
                 data: pretty(e.response?.data),
             },
         });
-        if (err.code === 'ECONNABORTED') {
+        if (e.code === 'ECONNABORTED') {
             err.retrydelay = 5000;
             err.status = 504;
-            err.code = 'Gateway Timeout';
+            err.code = 'GatewayTimeout';
         }
         throw err;
     });

@@ -44,7 +44,7 @@ instance().then(async function (app) {
                 }
             });
 
-            const list = await collection.find();
+            const list = await collection.list();
 
             list[0]?.id;
         }
