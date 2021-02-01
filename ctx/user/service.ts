@@ -2,19 +2,32 @@ import { User } from '@leo/ctx/user/schema'
 import { FindOptions } from 'sequelize'
 
 interface Collection<V extends User> {
-    enum(): Promise<{ list: V[], total: number }>
-    list(): Promise<V[]>
+    make(list: (Omit<V, 'id'> & Partial<V>)[]): Promise<Pick<V, 'id'>[]>
+    list<K extends keyof V>(...fields: K[]): Promise<Pick<V, K | 'id'>[]>
     size(): Promise<number>
     drop(): Promise<number>
 }
 interface Entity<V extends User> {
-    find(): Promise<V | undefined>
-    data(): Promise<V>
-    edit(data: Partial<V>): Promise<void>
+    find<K extends keyof V>(...fields: K[]): Promise<Pick<V, K | 'id'> | undefined>
+    data<K extends keyof V>(...fields: K[]): Promise<Pick<V, K>>
+    edit(data: Omit<Partial<V>, 'id'>): Promise<void>
     drop(): Promise<0 | 1>
 }
+type Find<V, R extends {}> = R & Pick<FindOptions<V>,
+    | 'transaction'
+    | 'offset'
+    | 'limit'
+    | 'where'
+>
 interface Service {
-    collection<R extends User>(options: FindOptions<R>): Collection<R>
+    collection<R extends User>(options: Find<R, {
+    }>): Collection<R>
+    entity<R extends User>(options: Find<R, {
+        where: Pick<R, 'id'>
+    }>): Entity<R>
+    entity<R extends User>(options: Find<R, {
+        where: Pick<R, 'name'>
+    }>): Entity<R>
 }
 declare global {
     namespace Express {
@@ -31,23 +44,42 @@ interface UserNotFound extends Error {
 }
 class UserService<V extends User> implements Service, Collection<V>, Entity<V> {
     collection<R extends User>(options: FindOptions<R>): Collection<R> {
-        this.options = options as {};
+        this.options = {
+            logging: this.options.logging,
+            ...options as {},
+        };
         return this as unknown as UserService<R>;
     }
-    async enum(): Promise<{ list: V[], total: number }> {
+    entity<R extends User>(options: FindOptions<R>): Entity<R> {
+        this.options = {
+            logging: this.options.logging,
+            only1: true,
+            limit: 1,
+            ...options as {},
+        };
+        console.assert(this.options.where);
+        return this as unknown as UserService<R>;
+    }
+    async make(list: (Omit<V, 'id'> & Partial<V>)[]): Promise<Pick<V, 'id'>[]> {
+        const { nanoid } = await import('nanoid');
         const model = await this.model.user;
-        const { rows, count } = await model.findAndCountAll({
+        const items = await model.bulkCreate(list.map((item) => {
+            return {
+                ...item,
+                id: item.id ?? nanoid(4),
+            };
+        }), {
             ...this.options,
         });
-        return {
-            list: rows as [],
-            total: count,
-        };
+        return items as [];
     }
-    async list(): Promise<V[]> {
+    async list<K extends keyof V>(...fields: K[]): Promise<Pick<V, K | 'id'>[]> {
         const model = await this.model.user;
         const list = await model.findAll({
             ...this.options,
+            attributes: fields.length
+                ? fields as []
+                : undefined,
         });
         return list as [];
     }
@@ -58,15 +90,13 @@ class UserService<V extends User> implements Service, Collection<V>, Entity<V> {
         });
         return size;
     }
-    async find(): Promise<V | undefined> {
-        const model = await this.model.user;
-        const item = await model.findOne({
-            ...this.options,
-        });
-        return item as unknown as V;
+    async find<K extends keyof V>(...fields: K[]): Promise<Pick<V, K | 'id'> | undefined> {
+        console.assert(this.options.only1);
+        const list = await this.list(...fields);
+        return list[0];
     }
-    async data(): Promise<V> {
-        const item = await this.find();
+    async data<K extends keyof V>(...fields: K[]): Promise<Pick<V, K>> {
+        const item = await this.find(...fields);
         if (!item) throw Error.General<UserNotFound>({
             message: 'user not found',
             name: 'UserNotFound',
@@ -76,8 +106,20 @@ class UserService<V extends User> implements Service, Collection<V>, Entity<V> {
         });
         return item;
     }
-    async edit(data: Partial<V>): Promise<void> {
-        data;
+    async edit(data: Omit<Partial<V>, 'id'>): Promise<void> {
+        console.assert(this.options.only1);
+        const model = await this.model.user;
+        const item = await model.findOne({
+            ...this.options,
+        });
+        if (!item) throw Error.General<UserNotFound>({
+            message: 'user not found',
+            name: 'UserNotFound',
+            code: 'NotFound',
+            status: 404,
+            params: { where: this.options.where },
+        });
+        await item.set(data).save();
     }
     async drop(): Promise<0> {
         const model = await this.model.user;
@@ -105,6 +147,11 @@ import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
     console.assert(app.service);
     app.service('User', function (ctx) {
-        return new UserService(ctx, {});
+        const log = ctx.log('User');
+        return new UserService(ctx, {
+            logging(text, ms) {
+                log.info(text, { ms });
+            },
+        });
     });
 });

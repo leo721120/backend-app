@@ -21,34 +21,6 @@ instance().then(async function (app) {
             });
         }*/
         {
-            const database = app.database('sequelize');
-
-            await database.connect({
-                dialect: 'sqlite',
-                storage: ':memory:',
-                database: 'example',
-            });
-            app.database('sequelize', function () {
-                return database;
-            });
-
-            const service = app.service('User');
-
-            const collection = service.collection({
-                limit: 13,
-                offset: 14,
-                where: {
-                    id: 's',
-                    name: ['aa', 'bb'],
-                    ///cc: 'a',
-                }
-            });
-
-            const list = await collection.list();
-
-            list[0]?.id;
-        }
-        {
             app.get('/sample', function (_, res) {
                 res.status(200).json({
                 });

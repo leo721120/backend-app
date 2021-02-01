@@ -25,11 +25,11 @@ export default Module(async function (app) {
             })
             class UserModel extends database.Model implements User {
                 @database.Column({
-                    type: ctx.sequelize.DataTypes.INTEGER,
-                    autoIncrement: true,
+                    type: ctx.sequelize.DataTypes.STRING,
+                    comment: 'primary key of user',
                     primaryKey: true,
                 })
-                readonly id: number
+                readonly id: string
 
                 @database.Column({
                     type: ctx.sequelize.DataTypes.STRING,

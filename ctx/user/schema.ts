@@ -1,5 +1,5 @@
 export interface User {
-    readonly id: number
+    readonly id: string
     readonly name: string
     password: string
 }
@@ -14,13 +14,19 @@ function Schema() {
         ],
         properties: {
             id: {
-                type: 'integer',
+                type: 'string',
+                minLength: 3,
+                maxLength: 8,
             },
             name: {
                 type: 'string',
+                minLength: 1,
+                maxLength: 100,
             },
             password: {
                 type: 'string',
+                minLength: 1,
+                maxLength: 100,
             },
         },
     });
