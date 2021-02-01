@@ -13,19 +13,21 @@ interface Entity<V extends User> {
     edit(data: Omit<Partial<V>, 'id'>): Promise<void>
     drop(): Promise<0 | 1>
 }
-type Find<V, R extends {}> = R & Pick<FindOptions<V>,
+type FindOne<V, R extends {}> = R & Pick<FindOptions<V>,
     | 'transaction'
     | 'offset'
-    | 'limit'
     | 'where'
 >
+type FindAll<V, R extends {}> = FindOne<V, R> & Pick<FindOptions<V>,
+    | 'limit'
+>
 interface Service {
-    collection<R extends User>(options: Find<R, {
+    collection<R extends User>(options: FindAll<R, {
     }>): Collection<R>
-    entity<R extends User>(options: Find<R, {
+    entity<R extends User>(options: FindOne<R, {
         where: Pick<R, 'id'>
     }>): Entity<R>
-    entity<R extends User>(options: Find<R, {
+    entity<R extends User>(options: FindOne<R, {
         where: Pick<R, 'name'>
     }>): Entity<R>
 }
@@ -60,73 +62,87 @@ class UserService<V extends User> implements Service, Collection<V>, Entity<V> {
         console.assert(this.options.where);
         return this as unknown as UserService<R>;
     }
-    async make(list: (Omit<V, 'id'> & Partial<V>)[]): Promise<Pick<V, 'id'>[]> {
-        const { nanoid } = await import('nanoid');
-        const model = await this.model.user;
-        const items = await model.bulkCreate(list.map((item) => {
-            return {
-                ...item,
-                id: item.id ?? nanoid(4),
-            };
-        }), {
-            ...this.options,
+    make(list: (Omit<V, 'id'> & Partial<V>)[]): Promise<Pick<V, 'id'>[]> {
+        return Promise.lazy(async () => {
+            const { nanoid } = await import('nanoid');
+            const model = await this.model.user;
+            const items = await model.bulkCreate(list.map((item) => {
+                return {
+                    ...item,
+                    id: item.id ?? nanoid(4),
+                };
+            }), {
+                ...this.options,
+            });
+            return items as [];
         });
-        return items as [];
     }
-    async list<K extends keyof V>(...fields: K[]): Promise<Pick<V, K | 'id'>[]> {
-        const model = await this.model.user;
-        const list = await model.findAll({
-            ...this.options,
-            attributes: fields.length
-                ? fields as []
-                : undefined,
+    list<K extends keyof V>(...fields: K[]): Promise<Pick<V, K | 'id'>[]> {
+        return Promise.lazy(async () => {
+            const model = await this.model.user;
+            const list = await model.findAll({
+                ...this.options,
+                attributes: fields.length
+                    ? fields as []
+                    : undefined,
+            });
+            return list as [];
         });
-        return list as [];
     }
-    async size(): Promise<number> {
-        const model = await this.model.user;
-        const size = await model.count({
-            ...this.options,
+    size(): Promise<number> {
+        return Promise.lazy(async () => {
+            const model = await this.model.user;
+            const size = await model.count({
+                ...this.options,
+            });
+            return size;
         });
-        return size;
     }
-    async find<K extends keyof V>(...fields: K[]): Promise<Pick<V, K | 'id'> | undefined> {
-        console.assert(this.options.only1);
-        const list = await this.list(...fields);
-        return list[0];
+    find<K extends keyof V>(...fields: K[]): Promise<Pick<V, K | 'id'> | undefined> {
+        return Promise.lazy(async () => {
+            console.assert(this.options.only1);
+            const list = await this.list(...fields);
+            return list[0];
+        });
     }
-    async data<K extends keyof V>(...fields: K[]): Promise<Pick<V, K>> {
-        const item = await this.find(...fields);
-        if (!item) throw Error.General<UserNotFound>({
-            message: 'user not found',
-            name: 'UserNotFound',
-            code: 'NotFound',
-            status: 404,
-            params: { where: this.options.where },
+    data<K extends keyof V>(...fields: K[]): Promise<Pick<V, K>> {
+        return Promise.lazy(async () => {
+            const item = await this.find(...fields);
+            if (!item) throw Error.General<UserNotFound>({
+                message: 'user not found',
+                name: 'UserNotFound',
+                code: 'NotFound',
+                status: 404,
+                params: { where: this.options.where },
+            });
+            return item;
         });
-        return item;
     }
-    async edit(data: Omit<Partial<V>, 'id'>): Promise<void> {
-        console.assert(this.options.only1);
-        const model = await this.model.user;
-        const item = await model.findOne({
-            ...this.options,
+    edit(data: Omit<Partial<V>, 'id'>): Promise<void> {
+        return Promise.lazy(async () => {
+            console.assert(this.options.only1);
+            const model = await this.model.user;
+            const item = await model.findOne({
+                ...this.options,
+            });
+            if (!item) throw Error.General<UserNotFound>({
+                message: 'user not found',
+                name: 'UserNotFound',
+                code: 'NotFound',
+                status: 404,
+                params: { where: this.options.where },
+            });
+            await item.set(data).save();
         });
-        if (!item) throw Error.General<UserNotFound>({
-            message: 'user not found',
-            name: 'UserNotFound',
-            code: 'NotFound',
-            status: 404,
-            params: { where: this.options.where },
-        });
-        await item.set(data).save();
     }
-    async drop(): Promise<0> {
-        const model = await this.model.user;
-        const size = await model.destroy({
-            ...this.options,
+    drop(): Promise<0> {
+        return Promise.lazy(async () => {
+            const model = await this.model.user;
+            const size = await model.destroy({
+                ...this.options,
+            });
+            return size as 0;
         });
-        return size as 0;
     }
     constructor(
         private ctx: Express.Application,

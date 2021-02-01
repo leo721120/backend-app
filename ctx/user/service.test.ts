@@ -54,6 +54,14 @@ describe('config', function () {
                     id: '2',
                 },
             }).drop();
+
+            const res = await service.entity({
+                where: {
+                    id: '2',
+                },
+            }).data('id').settle();
+
+            console.info(res.errors?.[0].message);
         });
     });
 });

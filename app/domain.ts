@@ -1,4 +1,5 @@
-import '@leo/lib/error'
+import '@leo/lib/node/promise'
+import '@leo/lib/node/error'
 export async function instance() {
     const { instance } = await import('./instance');
     const assert = await import('assert');
