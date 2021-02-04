@@ -13,9 +13,9 @@ declare global {
 import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
     console.assert(app.model);
-    app.model('User', async function () {
-        console.assert(app.database);
-        const database = app.database('sequelize');
+    app.model('User', async function (ctx) {
+        console.assert(ctx.database);
+        const database = ctx.database('sequelize');
         console.assert(database.model);
         database.model('User', async function (ctx) {
             @database.Table({
@@ -46,11 +46,11 @@ export default Module(async function (app) {
             };
             return UserModel;
         });
-        app.model('User', function (ctx) {
+        ctx.model('User', function (ctx) {
             return ctx
                 .database('sequelize')
                 .model('User');
         });
-        return app.model('User');
+        return ctx.model('User');
     });
 });

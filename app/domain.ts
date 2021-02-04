@@ -23,6 +23,7 @@ export async function instance() {
     await app.load(await import('@leo/ctx/user/model'));
     await app.load(await import('@leo/ctx/user/schema'));
     await app.load(await import('@leo/ctx/user/service'));
+    await app.load(await import('@leo/ctx/user/controller'));
     app.use(app.finalize());
     return app;
 }

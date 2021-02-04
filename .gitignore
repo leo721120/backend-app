@@ -1,4 +1,7 @@
 *
 !app/
+!ctx/
+!lib/
 !**/*.ts
 !**/*.json
+!**/*.feature

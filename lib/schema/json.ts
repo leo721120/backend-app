@@ -1,15 +1,12 @@
 import Ajv, {
     JSONSchemaType,
-    ValidateFunction,
     ErrorObject,
 } from 'ajv'
 
 type Schema<V> = JSONSchemaType<V>
-type SchemaValidate<V> = {
-    (data?: V | null | undefined): {
-        throw(): never | void
-        error?: SchemaError
-    }
+type SchemaValidate<V> = (data?: V | null | undefined) => {
+    throw(): never | void
+    error?: SchemaError
 }
 declare global {
     interface JSON {
@@ -30,10 +27,17 @@ export default Module(async function () {
     JSON.ajv = new ajv.default();
     JSON.Ajv = ajv.default;
     JSON.schema = function (define) {
-        const validate: SchemaValidate<{}> & {
-            compile(): ValidateFunction<{}>
-        } = function (data) {
-            const res = validate.compile();
+        const ctx = {
+            compile() {
+                console.assert(JSON.ajv);
+                const value = JSON.ajv.compile(define);
+                console.assert(value);
+                ctx.compile = () => value;
+                return value;
+            },
+        };
+        const validate: SchemaValidate<{}> = function (data) {
+            const res = ctx.compile();
             const err = function () {
                 return Error.General<SchemaError>({
                     message: 'malformed data',
@@ -53,13 +57,6 @@ export default Module(async function () {
                     throw this.error;
                 },
             };
-        };
-        validate.compile = function () {
-            console.assert(JSON.ajv);
-            const value = JSON.ajv.compile(define);
-            console.assert(value);
-            validate.compile = () => value;
-            return value;
         };
         return Object.assign(validate, define);
     };
