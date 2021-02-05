@@ -16,13 +16,13 @@ export default Module(async function (app) {
     }>('/users', {
         schema() {
             return {
+                tags: ['User'],
                 summary: 'List Users',
-                description: `List all users`,
                 operationId: 'ListUsers',
                 parameters: [],
                 responses: {
                     200: {
-                        description: `Response with all users`,
+                        description: 'success',
                         content: {
                             'application/json': {
                                 schema: {
@@ -39,6 +39,13 @@ export default Module(async function (app) {
                                         },
                                     },
                                 },
+                                example: {
+                                    users: [{
+                                        id: '#id',
+                                        name: 'user-1',
+                                        password: '123456',
+                                    }],
+                                },
                             },
                         },
                     },
@@ -53,6 +60,62 @@ export default Module(async function (app) {
                 name: 'abc',
                 password: 'abc',
             }],
+        });
+    });
+    controller.get<{
+        responses: {
+            200: {
+                content: {
+                    'application/json': {
+                    }
+                }
+            }
+            400: {
+                content: {
+                    'application/json': {}
+                }
+            }
+        }
+    }>('/test', {
+        schema() {
+            return {
+                tags: ['Test'],
+                summary: 'Test',
+                operationId: 'Test',
+                parameters: [],
+                responses: {
+                    200: {
+                        description: 'success',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    required: [],
+                                },
+                                example: {
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        description: 'too bad',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    required: [],
+                                },
+                                example: {
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+        },
+    }, async function (req, res) {
+        req.exchange;
+        res.status(200).json({
         });
     });
 });

@@ -166,7 +166,7 @@ export async function instance() {
                     req.ctx = function () {
                         const cid = req.cid;
                         const obj = {
-                            ...ctx,
+                            ...app,
                             log,
                             cid,
                         };

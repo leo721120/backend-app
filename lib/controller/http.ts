@@ -7,37 +7,91 @@ declare global {
     }
 }
 import { OpenAPIV3 } from 'openapi-types'
-import { RequestHandler } from 'express'
 import { JSONSchemaType } from 'ajv'
+type OperationObject<V>
+    = keyof V extends never ? never : V
+    ;
+interface OperationContent<V extends {
+    [media: string]: unknown
+}> {
+    'application/xml': OpenAPIV3.MediaTypeObject
+    'application/json': {
+        schema: JSONSchemaType<V['application/json']>
+        example: V['application/json']
+    }
+}
+interface OperationResponse<V extends {
+    [code: string]: { content: {} }
+}> {
+    200: {
+        description: string
+        content: OperationObject<{
+            [Media in keyof V[200]['content']]: Media extends keyof OperationContent<{}> ? OperationContent<V[200]['content']>[Media] : never
+        }>
+    }
+    400: {
+        description: string
+        content: OperationObject<{
+            [Media in keyof V[400]['content']]: Media extends keyof OperationContent<{}> ? OperationContent<V[400]['content']>[Media] : never
+        }>
+    }
+}
+interface ExchangeResponse<V extends {
+    content: {
+        [media: string]: unknown
+    }
+}> {
+    //headers(o: {}): this
+    content(data: {
+        [M in keyof V['content']]: () => PromiseLike<V['content'][M]> | V['content'][M]
+    }): this
+}
+interface ExchangeRequest<V extends {
+}> {
+    headers(): V
+    params(): V
+    query(): V
+    body(): V
+}
+interface OperationExchange<V extends {
+    responses: {
+        [code: string]: {
+            content: {
+                [media: string]: unknown
+            }
+        }
+    }
+}> {
+    response<Code extends keyof V['responses']>(status: Code): ExchangeResponse<V['responses'][Code]>
+    request(): ExchangeRequest<V>
+}
+import { RequestHandler } from 'express'
 interface Operation {
     op<R extends {
         responses: {
             [code: string]: {
                 content: {
-                    'application/json'?: unknown
+                    [media: string]: unknown
                 }
             }
         }
     }>(path: string, options: {
-        schema(): OpenAPIV3.OperationObject<{
+        schema(): {
+            tags: string[]
             summary: string
-            description: string
             operationId: string
-            responses: OpenAPIV3.ResponsesObject & {
-                [Code in keyof R['responses']]: OpenAPIV3.ResponseObject & {
-                    description: string
-                    content: {
-                        [Media in keyof R['responses'][Code]['content']]: OpenAPIV3.MediaTypeObject & Media extends 'application/json' ? {
-                            schema: JSONSchemaType<R['responses'][Code]['content'][Media]>
-                        } : {
-                        }
-                    }
-                }
-            }
-        }>
-    }, cb: RequestHandler): Controller
+            responses: OperationObject<{
+                [Code in keyof R['responses']]: Code extends keyof OperationResponse<{}> ? OperationResponse<R['responses']>[Code] : never
+            }>
+        }
+    }, cb: (
+        req: Parameters<RequestHandler>[0] & { exchange(): OperationExchange<R> },
+        res: Parameters<RequestHandler>[1],
+        next: Parameters<RequestHandler>[2],
+    ) => void): Controller
 }
 interface Controller {
+    openapi(version: 'v3'): OpenAPIV3.Document
     get: Operation['op']
 }
 import { Module } from '@leo/app/instance'
@@ -62,7 +116,7 @@ export default Module(async function (app) {
             name: string
         };
         const openapi: OpenAPIV3.Document = {
-            openapi: '3.0.x',
+            openapi: '3.0.1',
 
             info: {
                 title: info.name,
@@ -98,12 +152,19 @@ export default Module(async function (app) {
                             return fn.call(res, data);
                         };
                     });
-                    return cb(req, res, next);
+                    return cb(Object.assign(req, {
+                        exchange() {
+                            return null as any;
+                        },
+                    }), res, next);
                 });
                 return controller;
             };
         };
         const controller: Controller = {
+            openapi() {
+                return openapi;
+            },
             get: op('get'),
         };
         app.controller('http', function () {

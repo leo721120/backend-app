@@ -12,6 +12,11 @@ import { instance } from './domain'
 instance().then(async function (app) {
     const log = app.log('app');
     {
+        app.get('/openapi/v3', function (req, res) {
+            const ctx = req.ctx();
+            const controller = ctx.controller('http');
+            res.status(200).json(controller.openapi('v3'));
+        });
         //application logic...
         /*{
             const connection = app.connection('ws');
