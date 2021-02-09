@@ -36,46 +36,31 @@ interface OperationResponse<V extends {
         }>
     }
 }
+import { RequestHandler } from 'express'
 interface ExchangeResponse<V extends {
-    content: {
-        [media: string]: unknown
-    }
+    content?: unknown
 }> {
-    //headers(o: {}): this
-    content(data: {
-        [M in keyof V['content']]: () => PromiseLike<V['content'][M]> | V['content'][M]
-    }): this
+    accept<M extends keyof V['content']>(media: M, cb: () => Promise<V['content'][M]>): this
 }
 interface ExchangeRequest<V extends {
+    responses?: unknown
 }> {
-    headers(): V
-    params(): V
-    query(): V
-    body(): V
+    response<Code extends keyof V['responses']>(code: Code): ExchangeResponse<V['responses'][Code]>
 }
-interface OperationExchange<V extends {
-    responses: {
-        [code: string]: {
-            content: {
-                [media: string]: unknown
-            }
-        }
-    }
-}> {
-    response<Code extends keyof V['responses']>(status: Code): ExchangeResponse<V['responses'][Code]>
-    request(): ExchangeRequest<V>
-}
-import { RequestHandler } from 'express'
 interface Operation {
     op<R extends {
         responses: {
-            [code: string]: {
+            [code: number]: {
                 content: {
                     [media: string]: unknown
                 }
             }
         }
     }>(path: string, options: {
+        exchange?(
+            req: Parameters<RequestHandler>[0],
+            res: Parameters<RequestHandler>[1],
+        ): ExchangeRequest<R>
         schema(): {
             tags: string[]
             summary: string
@@ -85,7 +70,8 @@ interface Operation {
             }>
         }
     }, cb: (
-        req: Parameters<RequestHandler>[0] & { exchange(): OperationExchange<R> },
+        ex: ExchangeRequest<R>,
+        req: Parameters<RequestHandler>[0],
         res: Parameters<RequestHandler>[1],
         next: Parameters<RequestHandler>[2],
     ) => void): Controller
@@ -97,18 +83,18 @@ interface Controller {
 import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
     app.controller('http', function () {
-        const monkeypatch = function <F extends Function>(fn: F, cb: (fn: F) => F) {
+        /*const monkeypatch = function <F extends Function>(fn: F, cb: (fn: F) => F) {
             const temp = fn;
             return cb(temp);
-        };
-        const structurize = function <V>(value: V): V {
+        };*/
+        /*const structurize = function <V>(value: V): V {
             return JSON.parse(JSON.stringify(value, function (_, value) {
                 if (value instanceof Function) return {
                     ...value,
                 };
                 return value;
             }));
-        };
+        };*/
         const info = require(`${process.cwd()}/package.json`) as {
             license?: string
             description?: string
@@ -129,17 +115,34 @@ export default Module(async function (app) {
         const op = function (method: keyof OpenAPIV3.PathItemObject): Operation['op'] {
             return function (path, options, cb) {
                 console.assert(!openapi.paths[path]?.[method]);
-                const schema = structurize(options.schema());
+                //const schema = structurize(options.schema());
+                const schema = options.schema();
                 console.assert(schema);
                 openapi.paths[path] = {
                     ...openapi.paths[path],
                     [method]: schema,
                 };
-
+                const exchange = options.exchange ?? function (req, res) {
+                    return {
+                        response(code) {
+                            return {
+                                accept(media, cb) {
+                                    req;
+                                    res;
+                                    code;
+                                    media;
+                                    cb;
+                                    return this;
+                                },
+                            };
+                        },
+                    };
+                };
                 const bind = app[method as 'get'].bind(app);
                 console.assert(bind);
                 bind(path, async function (req, res, next) {
-                    res.json = monkeypatch(res.json, function (fn) {
+                    const ex = exchange(req, res);
+                    /*res.json = monkeypatch(res.json, function (fn) {
                         return function (data) {
                             const response = schema.responses?.[res.statusCode] as OpenAPIV3.ResponseObject | undefined;
                             console.assert(response);
@@ -151,12 +154,8 @@ export default Module(async function (app) {
                             })(data).throw();
                             return fn.call(res, data);
                         };
-                    });
-                    return cb(Object.assign(req, {
-                        exchange() {
-                            return null as any;
-                        },
-                    }), res, next);
+                    });*/
+                    return cb(ex as ExchangeRequest<{}>, req, res, next);
                 });
                 return controller;
             };

@@ -52,7 +52,8 @@ export default Module(async function (app) {
                 },
             };
         },
-    }, function (req, res) {
+    }, function (ex, req, res) {
+        ex;
         req;
         res.status(200).json({
             users: [{
@@ -113,8 +114,9 @@ export default Module(async function (app) {
                 },
             };
         },
-    }, async function (req, res) {
-        req.exchange;
+    }, async function (ex, req, res) {
+        ex;
+        req;
         res.status(200).json({
         });
     });
