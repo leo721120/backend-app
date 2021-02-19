@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "tsc -b --clean",
     "build": "tsc",
-    "start": "node app/main",
+    "start": "ts-node app/main",
     "test": "jest"
   },
   "repository": {
@@ -31,6 +31,8 @@
     "openapi-types": "^7.2.3",
     "sqlite3": "^5.0.2",
     "supertest": "^6.1.3",
+    "ts-jest": "^26.5.1",
+    "ts-node": "^9.1.1",
     "typescript": "^4.1.5"
   },
   "dependencies": {
@@ -47,25 +49,5 @@
     "helmet": "^4.4.1",
     "nanoid": "^3.1.20",
     "sequelize": "^6.5.0"
-  },
-  "jest": {
-    "cacheDirectory": ".jest",
-    "testEnvironment": "node",
-    "testTimeout": 30000,
-    "testMatch": [
-      "**/?(*.)+(spec|test).[j]s?(x)"
-    ],
-    "testPathIgnorePatterns": [
-      "<rootDir>/node_modules/",
-      "<rootDir>/.temp/"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 50,
-        "functions": 50,
-        "lines": 60,
-        "statements": 50
-      }
-    }
   }
 }
