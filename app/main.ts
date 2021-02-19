@@ -14,8 +14,8 @@ instance().then(async function (app) {
     {
         app.get('/openapi/v3', function (req, res) {
             const ctx = req.ctx();
-            const controller = ctx.controller('http');
-            res.status(200).json(controller.openapi('v3'));
+            const controller = ctx.controller('openapi');
+            res.status(200).json(controller.doc('v3'));
         });
         //application logic...
         /*{

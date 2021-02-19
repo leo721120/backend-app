@@ -3,7 +3,7 @@ import { OpenAPIV3 } from 'openapi-types'
 import { RequestHandler } from 'express'
 import { JSONSchemaType } from 'ajv'
 export default Module(async function (app) {
-    app.controller('http', function () {
+    app.controller('openapi', function () {
         const info = require(`${process.cwd()}/package.json`) as {
             license?: string
             description?: string
@@ -25,7 +25,7 @@ export default Module(async function (app) {
             openapi,
             app,
         });
-        app.controller('http', function () {
+        app.controller('openapi', function () {
             return controller;
         });
         return controller;
@@ -34,8 +34,8 @@ export default Module(async function (app) {
 declare global {
     namespace Express {
         interface Application {
-            controller(name: 'http'): Controller
-            controller(name: 'http', factory: Express.Factory<Controller>): this
+            controller(name: 'openapi'): Controller
+            controller(name: 'openapi', factory: Express.Factory<Controller>): this
         }
     }
 }
@@ -117,7 +117,7 @@ interface Operation {
     ) => void): Controller
 }
 interface Controller {
-    openapi(version: 'v3'): OpenAPIV3.Document
+    doc(version: 'v3'): OpenAPIV3.Document
     get: Operation
 }
 namespace OpenAPIv3 {
@@ -308,7 +308,7 @@ namespace OpenAPIv3 {
             };
         };
         const controller: Controller = {
-            openapi() {
+            doc() {
                 return openapi.content();
             },
             get: op('get'),

@@ -2,7 +2,7 @@ import { User } from '@leo/ctx/user/schema'
 import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
     console.assert(app.controller);
-    const controller = app.controller('http');
+    const controller = app.controller('openapi');
     controller.get<{
         responses: {
             200: {
@@ -132,8 +132,4 @@ export default Module(async function (app) {
             };
         });
     });
-
-
-    //controller.validate('/apis/ooxx/abc/', data);
-    //controller.schema()
 });
