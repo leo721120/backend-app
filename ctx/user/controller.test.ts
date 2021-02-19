@@ -33,6 +33,7 @@ autoBindSteps([
     };
     beforeAll(function () {
         jest.restoreAllMocks();
+        jest.spyOn(console, 'error').mockImplementation();
         jest.spyOn(console, 'info').mockImplementation();
     });
     afterAll(function () {
@@ -92,7 +93,7 @@ autoBindSteps([
         const got = app[method.toLowerCase() as 'get'];
         console.assert(got);
         console.assert(fixture.req.url);
-        fixture.res = await got(fixture.req.url!);
+        fixture.res = await got(fixture.req.url);
     });
     then(/^expect status should be '(\d+)'$/, async function (status: string) {
         const fixture = Fixture.instance();

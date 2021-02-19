@@ -19,7 +19,6 @@ export default Module(async function (app) {
                 tags: ['User'],
                 summary: 'List Users',
                 operationId: 'ListUsers',
-                parameters: [],
                 responses: {
                     200: {
                         description: 'success',
@@ -52,38 +51,39 @@ export default Module(async function (app) {
                 },
             };
         },
-    }, function (ex, req, res) {
-        ex;
-        req;
-        res.status(200).json({
-            users: [{
-                id: 'abc',
-                name: 'abc',
-                password: 'abc',
-            }],
+    }, async function ({ exchange }) {
+        const ex = exchange();
+        await ex.response(200).accept('application/json', async function () {
+            return {
+                users: [{
+                    id: 'abc',
+                    name: 'abc',
+                    password: 'abc',
+                }],
+            };
         });
-    });
-    controller.get<{
+    }).get<{
         responses: {
             200: {
                 content: {
                     'application/json': {
+                        user: User
                     }
                 }
             }
-            400: {
-                content: {
-                    'application/json': {}
-                }
-            }
         }
-    }>('/test', {
+        //headers: {}
+        params: {
+            id: string
+        }
+        //query: {}
+        //body: {}
+    }>('/users/:id', {
         schema() {
             return {
-                tags: ['Test'],
-                summary: 'Test',
-                operationId: 'Test',
-                parameters: [],
+                tags: ['User'],
+                summary: 'Get User',
+                operationId: 'GetUser',
                 responses: {
                     200: {
                         description: 'success',
@@ -91,33 +91,49 @@ export default Module(async function (app) {
                             'application/json': {
                                 schema: {
                                     type: 'object',
-                                    required: [],
+                                    required: ['user'],
+                                    properties: {
+                                        user: {
+                                            type: app.schema('User').type,
+                                            required: app.schema('User').required,
+                                            properties: app.schema('User').properties,
+                                        },
+                                    },
                                 },
                                 example: {
-                                },
-                            },
-                        },
-                    },
-                    400: {
-                        description: 'too bad',
-                        content: {
-                            'application/json': {
-                                schema: {
-                                    type: 'object',
-                                    required: [],
-                                },
-                                example: {
+                                    user: {
+                                        id: '#id',
+                                        name: 'user-1',
+                                        password: '123456',
+                                    },
                                 },
                             },
                         },
                     },
                 },
+                params: {
+                    id: {
+                        description: 'identity of user',
+                        example: 'user123id',
+                        schema: app.schema('User').properties!.id,
+                    },
+                },
             };
         },
-    }, async function (ex, req, res) {
-        ex;
-        req;
-        res.status(200).json({
+    }, async function ({ exchange }) {
+        const ex = exchange();
+        await ex.response(200).accept('application/json', async function () {
+            return {
+                user: {
+                    id: ex.params('id'),
+                    name: 'abc',
+                    password: 'abc',
+                },
+            };
         });
     });
+
+
+    //controller.validate('/apis/ooxx/abc/', data);
+    //controller.schema()
 });
