@@ -1,15 +1,13 @@
 import { RequestHandler, ErrorRequestHandler } from 'express'
 {
     const layer = require('express/lib/router/layer');
-    layer.prototype.handle_request = <RequestHandler>function (this: any, req, res, next) {
-        const fn = this.handle as RequestHandler;
+    layer.prototype.handle_request = <RequestHandler>function (this: { handle: RequestHandler }, req, res, next) {
+        const fn = this.handle;
 
         if (fn.length > 3) {
             return next();
         }
-        Promise.resolve().then(function () {
-            return fn(req, res, next);
-        }).catch(next);
+        Promise.resolve(fn(req, res, next)).catch(next);
     };
 }
 declare module 'express-serve-static-core' {
