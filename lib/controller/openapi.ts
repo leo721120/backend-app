@@ -4,7 +4,7 @@ import { RequestHandler } from 'express'
 import { JSONSchemaType } from 'ajv'
 export default Module(async function (app) {
     app.controller('openapi', function () {
-        const info = require(`${process.cwd()}/package.json`) as {
+        const info = require(`${process.env.WORKDIR}/package.json`) as {
             license?: string
             description?: string
             version: string

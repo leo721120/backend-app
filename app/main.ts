@@ -5,11 +5,23 @@ declare global {
             port of http server, default is `undefined`
             */
             readonly PORT?: string
+            /**
+            virtual working directory
+            */
+            readonly WORKDIR: string
         }
     }
 }
-import { instance } from './domain'
-instance().then(async function (app) {
+export {
+}
+Promise.resolve().then(async function () {
+    const path = await import('path');
+    Object.assign(process.env, <NodeJS.ProcessEnv>{
+        WORKDIR: path.resolve(__dirname, '..'),
+    });
+}).then(async function () {
+    const { instance } = await import('./domain');
+    const app = await instance();
     const log = app.log('app');
     {
         app.get('/openapi/v3', function (req, res) {
