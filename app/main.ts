@@ -5,20 +5,13 @@ declare global {
             port of http server, default is `undefined`
             */
             readonly PORT?: string
-            /**
-            virtual working directory
-            */
-            readonly WORKDIR: string
         }
     }
 }
 export {
 }
 Promise.resolve().then(async function () {
-    const path = await import('path');
-    Object.assign(process.env, <NodeJS.ProcessEnv>{
-        WORKDIR: path.resolve(__dirname, '..'),
-    });
+    //initialze
 }).then(async function () {
     const { instance } = await import('./domain');
     const app = await instance();
@@ -41,12 +34,14 @@ Promise.resolve().then(async function () {
     const port = process.env.PORT;
     const srv = app.listen(port, function () {
         log.info(srv.address());
-        app.emit('ready');
+        app.event('HttpListen').emit({
+        });
     }).on('error', function (e) {
         log.error(e);
     }).once('close', function () {
         log.info('close');
-        app.emit('close');
+        app.event('HttpClose').emit({
+        });
     });
     const close: NodeJS.SignalsListener = function (signal) {
         log.info({ signal });

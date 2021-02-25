@@ -7,19 +7,12 @@ import { RequestHandler, ErrorRequestHandler } from 'express'
         if (fn.length > 3) {
             return next();
         }
-        Promise.resolve(fn(req, res, next)).catch(next);
+        try {
+            Promise.resolve(fn(req, res, next)).catch(next);
+        } catch (e) {
+            next(e);
+        }
     };
-}
-declare module 'express-serve-static-core' {
-    /*
-    !FIX
-    Interface 'Application' cannot simultaneously extend types 'EventEmitter' and 'Application'.
-    Named property 'once' of types 'EventEmitter' and 'Application' are not identical.ts(2320)
-    */
-    interface Application {
-        emit(event: string | symbol, ...a: any[]): boolean
-        once(event: string | symbol, cb: (...a: any[]) => any): this
-    }
 }
 interface Module<V> {
     (app: import('express').Application): V | PromiseLike<V>
@@ -37,7 +30,7 @@ declare global {
             (ctx: Express.Application): V
         }
         interface Request {
-            ctx(): Omit<Express.Application, 'emit' | 'once' | 'on'>
+            ctx(): Express.Application
             cid(): string
             log(): Log
             //ranges(maxsize: number): Range[]
@@ -46,12 +39,6 @@ declare global {
         }
         interface Application {
             readonly express: typeof import('express')
-            emit(event: 'close'): boolean
-            emit(event: 'ready'): boolean
-            once(event: 'close', cb: () => void): this
-            once(event: 'ready', cb: () => void): this
-            on(event: 'close', cb: () => void): this
-            on(event: 'ready', cb: () => void): this
             object<R>(names: string[]): Optional<R>
             object<R>(names: string[], factory: Factory<R>): this
             cid(): string

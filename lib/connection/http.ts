@@ -81,7 +81,6 @@ export default Module(async function (app) {
     const axios = await import('axios');
     const https = await import('https');
     const http = await import('http');
-    const ctx = app as Express.Application;
     const fetch = axios.default.create({
         //maxContentLength: Infinity,
         //maxBodyLength: Infinity,
@@ -173,7 +172,7 @@ export default Module(async function (app) {
         }
         throw err;
     });
-    ctx.once('close', function () {
+    app.event('HttpClose').once(function () {
         (fetch.defaults.httpsAgent as Agent | undefined)?.destroy();
         (fetch.defaults.httpAgent as Agent | undefined)?.destroy();
     });
