@@ -39,174 +39,51 @@ declare global {
         }
     }
 }
-type OperationObject<V>
-    = keyof V extends never ? never : V
-    ;
-type OperationDefine = {
-    params?: {
-        [prop: string]: string
-    }
-    responses: {
-        [code: number]: {
-            content: {
-                [media: string]: unknown
-            }
-        }
-    }
-}
-type OperationSchema<V extends OperationDefine> = {
-    tags: string[]
-    summary: string
-    operationId: string
-    responses: OperationObject<{
-        [Code in keyof V['responses']]: Code extends keyof OperationResponses<{}> ? OperationResponses<V['responses']>[Code] : never
-    }>
-} & (V extends Pick<V, 'params'> ? {
-    params: OperationObject<{
-        [Prop in keyof V['params']]: {
-            description: string
-            example: V['params'][Prop]
-            schema: JSONSchemaType<V['params'][Prop]> | {
-                $ref: string
-            }
-        }
-    }>
-} : {
-})
-interface OperationResponses<V extends OperationDefine['responses']> {
-    200: {
-        description: string
-        content: OperationObject<{
-            [Media in keyof V[200]['content']]: Media extends keyof OperationContents<{}> ? OperationContents<V[200]['content']>[Media] : never
-        }>
-    }
-    400: {
-        description: string
-        content: OperationObject<{
-            [Media in keyof V[400]['content']]: Media extends keyof OperationContents<{}> ? OperationContents<V[400]['content']>[Media] : never
-        }>
-    }
-}
-interface OperationContents<V extends OperationDefine['responses'][number]['content']> {
-    'application/xml': OpenAPIV3.MediaTypeObject
-    'application/json': {
-        example: V['application/json']
-        schema: JSONSchemaType<V['application/json']> | {
-            $ref: string
-        }
-    }
-}
-interface ExchangeResponse<V extends {
-    content?: unknown
-}> {
-    then<R>(done: () => R, fail?: (e: Error) => R): Promise<R>
-    accept<M extends keyof V['content']>(media: M, cb: () => Promise<V['content'][M]>): this
-}
-interface ExchangeRequest<V extends OperationDefine> {
-    response<Code extends keyof V['responses']>(code: Code): ExchangeResponse<V['responses'][Code]>
-    params<K extends keyof V['params']>(name: K): V['params'][K]
-}
-interface Operation {
-    <R extends OperationDefine>(path: string, options: {
-        exchange?(...a: Parameters<RequestHandler>): ExchangeRequest<R>
-        schema(): OperationSchema<R>
-    }, cb: (
-        req: Parameters<RequestHandler>[0] & { exchange(): ExchangeRequest<R> },
-        res: Parameters<RequestHandler>[1],
-        next: Parameters<RequestHandler>[2],
-    ) => void): Controller
-}
 interface Controller {
     doc(version: 'v3'): OpenAPIV3.Document
-    get: Operation
+    get: OpenAPIv3.Operation
 }
 namespace OpenAPIv3 {
-    interface Document extends OpenAPIV3.Document {
-        apis?: {
-            [pattern: string]: {
-                [method: string]: OpenAPIV3.OperationObject<{
-                    params?: { [prop: string]: OpenAPIV3.ParameterBaseObject }
-                }>
-            }
-        }
-        operation(method: keyof OpenAPIV3.PathItemObject): {
-            define(path: string, item: Required<Document>['apis'][string][string]): void
-        }
-        validate<A>(options: {
-            ref: string
-            value: A
-            error: Error
-        }): void
-        validate<A>(options: {
-            method: string
-            path: string
-            params: string
-            value: A
-            error: Error
-        }): void
-        content(): OpenAPIV3.Document
-    }
     export function document(define: OpenAPIV3.Document): Document {
         const ajv = {} as {
             instance: typeof JSON.ajv
         };
-        const doc = Object.assign(define, <Document>{
+        return Object.assign(define, <Document>{
             apis: {
             },
             content() {
-                const { apis, ...content } = doc;
-                this.content = function () {
-                    return content;
-                };
-                return this.content();
+                const { apis, ...content } = this;
+                return content as OpenAPIV3.Document;
             },
-            validate(options: {
-                ref?: string
-                method?: string
-                path?: string
-                params?: string
-                value: unknown
-                error: Error
-            }) {
-                if (!ajv.instance) {
-                    ajv.instance = new JSON.Ajv({
-                        logger: false,
-                        strict: false,
-                        schemas: {
-                            openapi: doc,
-                        },
-                    });
-                }
-                if (options.ref) {
-                    console.assert(ajv.instance);
-                    const err = ajv.instance.validate(options.ref, options.value);
-                    options.error.details = ajv.instance.errors;
-                    if (!err) throw options.error;
-                } else if (options.params) {
-                    console.assert(options.method);
-                    console.assert(options.path);
-                    console.assert(ajv.instance);
-                    return this.validate({
-                        ref: `openapi#/apis/${options.path!.replace(/\//g, '~1')}/${options.method}/params/${options.params}/schema`,
-                        ...options,
-                    });
-                }
+            validate(options) {
+                ajv.instance ??= new JSON.Ajv({
+                    logger: false,
+                    strict: false,
+                    schemas: {
+                        openapi: this,
+                    },
+                });
+                console.assert(ajv.instance);
+                const err = ajv.instance.validate(options.ref, options.value);
+                options.error.details = ajv.instance.errors;
+                if (!err) throw options.error;
+                return this;
             },
-            operation(method) {
+            operation(method, path) {
                 return {
-                    define(path, origin) {
-                        const { params, ...item } = origin;
-                        console.assert(!doc.apis?.[path]?.[method]);
-                        console.assert(doc.apis);
-                        doc.apis![path] = {
-                            ...doc.apis![path],
-                            [method]: origin,
+                    validate: (options) => {
+                        return this.validate({
+                            ref: `openapi#/apis/${path!.replace(/\//g, '~1')}/${method}/params/${options.params}/schema`,
+                            ...options,
+                        });
+                    },
+                    define: (op) => {
+                        const { params, ...item } = op;
+                        console.assert(this.apis);
+                        this.apis![path] = {
+                            ...this.apis![path],
+                            [method]: op,
                         };
-                        if (params) {
-                            Object.keys(params).forEach(function (prop) {
-                                path = path.replace(`:${prop}`, `{${prop}}`);
-                            });
-                        }
                         if (params) {
                             item.parameters = [
                                 ...item.parameters ?? [],
@@ -220,24 +97,56 @@ namespace OpenAPIv3 {
                                 }),
                             ];
                         }
-                        doc.paths[path] = {
-                            ...doc.paths[path],
+                        if (params) {
+                            Object.keys(params).forEach(function (prop) {
+                                path = path.replace(`:${prop}`, `{${prop}}`);
+                            });
+                        }
+                        this.paths[path] = {
+                            ...this.paths[path],
                             [method]: item,
                         };
+                        return this;
                     },
                 };
             },
         });
-        return doc;
     }
+    export interface Document extends OpenAPIV3.Document {
+        apis?: {
+            [path: string]: {
+                [method: string]: unknown
+            }
+        }
+        content(): OpenAPIV3.Document
+        validate<A>(options: {
+            ref: string
+            value: A
+            error: Error
+        }): Document
+        operation(method: keyof OpenAPIV3.PathItemObject, path: string): {
+            validate<A>(options: {
+                params: string
+                value: A
+                error: Error
+            }): Document
+            define(item: OpenAPIV3.OperationObject<{
+                params?: { [prop: string]: OpenAPIV3.ParameterBaseObject }
+            }>): Document
+        }
+    }
+}
+namespace OpenAPIv3 {
     export function controller(options: {
         app: import('express').Application,
-        openapi: Document,
+        openapi: OpenAPIv3.Document,
     }): Controller {
         const { openapi, app } = options;
         const op = function (method: keyof OpenAPIV3.PathItemObject): Operation {
-            return function (path, options, cb) {
-                const exchange = options.exchange ?? function (req, res) {
+            return function (path, schema) {
+                openapi.operation(method, path).define(schema);
+                if (!schema.handler) return controller;
+                const exchange = schema.exchange ?? function (req, res) {
                     return {
                         response(code) {
                             const response = {
@@ -278,9 +187,7 @@ namespace OpenAPIv3 {
                         params(name) {
                             const params = name as string;
                             const value = req.params[params];
-                            openapi.validate({
-                                method,
-                                path,
+                            openapi.operation(method, path).validate({
                                 params,
                                 value,
                                 error: Error.General<SchemaError>({
@@ -295,10 +202,8 @@ namespace OpenAPIv3 {
                         },
                     };
                 };
-                const schema = options.schema();
-                openapi.operation(method).define(path, schema);
                 app[method as 'get'](path, function (req, res, next) {
-                    return cb(Object.assign(req, {
+                    return schema.handler!(Object.assign(req, {
                         exchange() {
                             return exchange(req, res, next);
                         },
@@ -308,11 +213,85 @@ namespace OpenAPIv3 {
             };
         };
         const controller: Controller = {
-            doc() {
-                return openapi.content();
-            },
+            doc() { return openapi.content(); },
             get: op('get'),
         };
         return controller;
+    }
+    export interface Operation {
+        <R extends OperationDefine>(path: string, schema: OperationSchema<R>): Controller
+    }
+    type OperationObject<V>
+        = keyof V extends never ? never : V
+        ;
+    type OperationDefine = {
+        params?: {
+            [prop: string]: string
+        }
+        responses: {
+            [code: number]: {
+                content: {
+                    [media: string]: unknown
+                }
+            }
+        }
+    }
+    type OperationSchema<V extends OperationDefine> = {
+        tags: string[]
+        summary: string
+        operationId: string
+        responses: OperationObject<{
+            [Code in keyof V['responses']]: Code extends keyof OperationResponses<{}> ? OperationResponses<V['responses']>[Code] : never
+        }>
+        exchange?(...a: Parameters<RequestHandler>): ExchangeRequest<V>
+        handler?(
+            req: Parameters<RequestHandler>[0] & { exchange(): ExchangeRequest<V> },
+            res: Parameters<RequestHandler>[1],
+            next: Parameters<RequestHandler>[2],
+        ): void
+    } & (V extends Pick<V, 'params'> ? {
+        params: OperationObject<{
+            [Prop in keyof V['params']]: {
+                description: string
+                example: V['params'][Prop]
+                schema: JSONSchemaType<V['params'][Prop]> | {
+                    $ref: string
+                }
+            }
+        }>
+    } : {
+    })
+    interface OperationResponses<V extends OperationDefine['responses']> {
+        200: {
+            description: string
+            content: OperationObject<{
+                [Media in keyof V[200]['content']]: Media extends keyof OperationContents<{}> ? OperationContents<V[200]['content']>[Media] : never
+            }>
+        }
+        400: {
+            description: string
+            content: OperationObject<{
+                [Media in keyof V[400]['content']]: Media extends keyof OperationContents<{}> ? OperationContents<V[400]['content']>[Media] : never
+            }>
+        }
+    }
+    interface OperationContents<V extends OperationDefine['responses'][number]['content']> {
+        'application/xml': OpenAPIV3.MediaTypeObject
+        'application/json': {
+            example: V['application/json']
+            schema: JSONSchemaType<V['application/json']> | {
+                $ref: string
+            }
+        }
+    }
+    interface ExchangeResponse<V extends {
+        content?: unknown
+    }> {
+        then<R>(done: () => R, fail?: (e: Error) => R): Promise<R>
+        accept<M extends keyof V['content']>(media: M, cb: () => Promise<V['content'][M]>): this
+    }
+    interface ExchangeRequest<V extends OperationDefine> {
+        response<Code extends keyof V['responses']>(code: Code): ExchangeResponse<V['responses'][Code]>
+        params<K extends keyof V['params']>(name: K): V['params'][K]
     }
 }

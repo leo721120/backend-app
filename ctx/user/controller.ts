@@ -2,8 +2,9 @@ import { User } from '@leo/ctx/user/schema'
 import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
     console.assert(app.controller);
-    const controller = app.controller('openapi');
-    controller.get<{
+    const openapi = app.controller('openapi');
+    console.assert(openapi);
+    openapi.get<{
         responses: {
             200: {
                 content: {
@@ -14,54 +15,47 @@ export default Module(async function (app) {
             }
         }
     }>('/users', {
-        schema() {
-            return {
-                tags: ['User'],
-                summary: 'List Users',
-                operationId: 'ListUsers',
-                responses: {
-                    200: {
-                        description: 'success',
-                        content: {
-                            'application/json': {
-                                schema: {
-                                    type: 'object',
-                                    required: ['users'],
-                                    properties: {
-                                        users: {
-                                            type: 'array',
-                                            items: {
-                                                type: app.schema('User').type,
-                                                required: app.schema('User').required,
-                                                properties: app.schema('User').properties,
-                                            },
-                                        },
-                                    },
-                                },
-                                example: {
-                                    users: [{
-                                        id: '#id',
-                                        name: 'user-1',
-                                        password: '123456',
-                                    }],
+        tags: ['User'],
+        summary: 'List Users',
+        operationId: 'ListUsers',
+        responses: {
+            200: {
+                description: 'success',
+                content: {
+                    'application/json': {
+                        schema: {
+                            type: 'object',
+                            required: ['users'],
+                            properties: {
+                                users: {
+                                    type: 'array',
+                                    items: app.schema('User'),
                                 },
                             },
                         },
+                        example: {
+                            users: [{
+                                id: '#id',
+                                name: 'user-1',
+                                password: '123456',
+                            }],
+                        },
                     },
                 },
-            };
+            },
         },
-    }, async function ({ exchange }) {
-        const ex = exchange();
-        await ex.response(200).accept('application/json', async function () {
-            return {
-                users: [{
-                    id: 'abc',
-                    name: 'abc',
-                    password: 'abc',
-                }],
-            };
-        });
+        async handler({ exchange }) {
+            const ex = exchange();
+            await ex.response(200).accept('application/json', async function () {
+                return {
+                    users: [{
+                        id: 'abc',
+                        name: 'abc',
+                        password: 'abc',
+                    }],
+                };
+            });
+        }
     }).get<{
         responses: {
             200: {
@@ -79,57 +73,50 @@ export default Module(async function (app) {
         //query: {}
         //body: {}
     }>('/users/:id', {
-        schema() {
-            return {
-                tags: ['User'],
-                summary: 'Get User',
-                operationId: 'GetUser',
-                responses: {
-                    200: {
-                        description: 'success',
-                        content: {
-                            'application/json': {
-                                schema: {
-                                    type: 'object',
-                                    required: ['user'],
-                                    properties: {
-                                        user: {
-                                            type: app.schema('User').type,
-                                            required: app.schema('User').required,
-                                            properties: app.schema('User').properties,
-                                        },
-                                    },
-                                },
-                                example: {
-                                    user: {
-                                        id: '#id',
-                                        name: 'user-1',
-                                        password: '123456',
-                                    },
-                                },
+        tags: ['User'],
+        summary: 'Get User',
+        operationId: 'GetUser',
+        responses: {
+            200: {
+                description: 'success',
+                content: {
+                    'application/json': {
+                        schema: {
+                            type: 'object',
+                            required: ['user'],
+                            properties: {
+                                user: app.schema('User'),
+                            },
+                        },
+                        example: {
+                            user: {
+                                id: '#id',
+                                name: 'user-1',
+                                password: '123456',
                             },
                         },
                     },
                 },
-                params: {
-                    id: {
-                        description: 'identity of user',
-                        example: 'user123id',
-                        schema: app.schema('User').properties!.id,
-                    },
-                },
-            };
+            },
         },
-    }, async function ({ exchange }) {
-        const ex = exchange();
-        await ex.response(200).accept('application/json', async function () {
-            return {
-                user: {
-                    id: ex.params('id'),
-                    name: 'abc',
-                    password: 'abc',
-                },
-            };
-        });
+        params: {
+            id: {
+                description: 'identity of user',
+                example: 'user123id',
+                schema: app.schema('User').properties!.id,
+            },
+        },
+        async handler({ exchange }) {
+            const ex = exchange();
+            await ex.response(200).accept('application/json', async function () {
+                return {
+                    user: {
+                        id: ex.params('id'),
+                        name: 'abc',
+                        password: 'abc',
+                    },
+                };
+            });
+        },
     });
 });
