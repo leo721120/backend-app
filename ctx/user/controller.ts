@@ -119,4 +119,20 @@ export default Module(async function (app) {
             });
         },
     });
+    app.ws('/users/events', function (ws) {
+        ws.on('close', function (code, reason) {
+            console.log('remote closed', { code, reason });
+        }).on('error', function (e) {
+            console.error(e);
+        }).on('upgrade', function (req) {
+            console.log('remote upgrade', { req });
+        }).on('ping', function (data) {
+            console.log('ping', { data });
+        }).on('pong', function (data) {
+            console.log('pong', { data });
+        }).on('message', function (data) {
+            console.log('vvvv', { data });
+            ws.send(JSON.stringify({ data: 'cccc' }));
+        });
+    });
 });

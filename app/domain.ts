@@ -25,6 +25,7 @@ export async function instance() {
     await app.load(await import('@leo/lib/connection/http'));
     await app.load(await import('@leo/lib/controller'));
     await app.load(await import('@leo/lib/controller/openapi'));
+    await app.load(await import('@leo/lib/controller/websocket'));
     ///
     await app.load(await import('@leo/ctx/user/model'));
     await app.load(await import('@leo/ctx/user/schema'));
