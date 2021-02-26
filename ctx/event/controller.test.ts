@@ -83,6 +83,9 @@ describe('GET /events/subscription/:id', function () {
                 })
                 .expect(204)
                 ;
+            await new Promise(function (done) {
+                setTimeout(done, 20);
+            });
             await app.delete('/events/subscription/abc123')
                 .expect(200)
                 ;
