@@ -34,8 +34,7 @@ Promise.resolve().then(async function () {
     const port = process.env.PORT;
     const srv = app.listen(port, function () {
         log.info(srv.address());
-        app.event('HttpListen').emit({
-        });
+        app.event('HttpListen').emit(srv);
     }).on('error', function (e) {
         log.error(e);
     }).once('close', function () {

@@ -21,6 +21,7 @@ export async function instance() {
     await app.load(await import('@leo/lib/database'));
     await app.load(await import('@leo/lib/database/model'));
     await app.load(await import('@leo/lib/database/sequelize'));
+    //await app.load(await import('@leo/lib/discover/bonjour'));
     await app.load(await import('@leo/lib/connection'));
     await app.load(await import('@leo/lib/connection/http'));
     await app.load(await import('@leo/lib/controller'));
@@ -47,8 +48,7 @@ declare global {
 }
 declare module '@leo/lib/event' {
     interface Events {
-        HttpListen: {
-        }
+        HttpListen: import('http').Server
         HttpClose: {
         }
     }
