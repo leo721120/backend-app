@@ -62,6 +62,9 @@ describe('GET /events/subscription/:id', function () {
                         e ? fail(e) : done(res);
                     });
             });
+            await new Promise(function waitEventCallbackToBeReady(done) {
+                setTimeout(done, 20);
+            });
             await app.post('/events/echo')
                 .send({
                     events: [{
