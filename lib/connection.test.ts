@@ -7,22 +7,101 @@ describe('connection', function () {
         jest.clearAllMocks();
     });
     describe('http', function () {
+        async function mock(app: import('express').Application) {
+            const { createRequest, createResponse } = await import('node-mocks-http');
+            const settle = require('axios/lib/core/settle') as (...a: any[]) => any;
+            const axios = await import('axios');
+            return axios.default.create({
+                transformRequest(data) {
+                    return data;
+                },
+                adapter(config) {
+                    return new Promise<any>(function (done, fail) {
+                        const res = createResponse();
+                        const req = createRequest({
+                            method: config.method?.toUpperCase() as 'GET',
+                            url: config.url,
+                            headers: config.headers,
+                            query: config.params,
+                            body: config.data,
+                        });
+                        const data = function () {
+                            const buffer = res._getBuffer();
+                            if (buffer?.length) return buffer;
+                            const data = res._getData();
+                            if (Buffer.isBuffer(data)) return data;
+                            return Buffer.from(JSON.stringify(data));
+                        };
+                        const body = function () {
+                            const body = data();
+
+                            if (!config.responseType) {
+                                config.responseType = 'json';
+                            }
+                            if (config.responseType === 'json') {
+                                return JSON.parse(body.toString());
+                            }
+                            if (config.responseType === 'arraybuffer') {
+                                return body;
+                            }
+                            return body;
+                        };
+                        req.baseUrl = '';
+                        req.pipe = function (stream) {
+                            stream.end(JSON.stringify(req.body));
+                            return stream;
+                        };
+                        app(req, res);
+                        res.once('end', function () {
+                            if (req.method !== 'HEAD' && req.method !== 'GET') return;
+                            const etag = app.get('etag fn') as Function | undefined;
+                            if (!etag) return;
+                            res.set('etag', etag(data()));
+                            if (req.fresh) res.status(304);
+                        });
+                        res.once('finish', function () {
+                            settle(done, fail, {
+                                data: body(),
+                                status: res._getStatusCode(),
+                                statusText: res._getStatusMessage(),
+                                headers: res._getHeaders(),
+                                config,
+                            });
+                        });
+                        if (res._isEndCalled()) {
+                            res.emit('end');
+                            res.emit('finish');
+                        }
+                    });
+                },
+            });
+        }
         it('', async function () {
             const { instance } = await import('@leo/app/domain');
             const app = await instance();
-            const log = app.log('x');
-            const connection = app.connection('http');
-
-            await connection.fetch({
-                url: 'https://google.com'
+            const http = app.connection('http');
+            const connection = http.instance(await mock(app));
+            app.get('/test', function (_, res) {
+                res.status(200).send({
+                    abc: 123,
+                });
             });
-            await connection.fetch({
-                service: 'test',
-                timeout: 1000,
-                url: '127.0.0.2',
-            }).catch(function (e) {
-                jest.spyOn(console, 'error').mockImplementation();
-                log.error(e);
+            const res = await connection.fetch<{
+                abc: 123
+            }>({
+                url: '/test',
+                schema: {
+                    type: 'object',
+                    required: ['abc'],
+                    properties: {
+                        abc: {
+                            type: 'number',
+                        },
+                    },
+                },
+            });
+            expect(res.data).toMatchObject({
+                abc: 123,
             });
         });
     });
