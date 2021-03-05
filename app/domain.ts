@@ -24,6 +24,7 @@ export async function instance() {
     //await app.load(await import('@leo/lib/discover/bonjour'));
     await app.load(await import('@leo/lib/connection'));
     await app.load(await import('@leo/lib/connection/http'));
+    await app.load(await import('@leo/lib/connection/mqtt'));
     await app.load(await import('@leo/lib/controller'));
     await app.load(await import('@leo/lib/controller/openapi'));
     await app.load(await import('@leo/lib/controller/websocket'));
