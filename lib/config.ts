@@ -18,11 +18,8 @@ export interface Config<V extends {}> {
 import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
     Object.assign(app, <Express.Application>{
-        config<R>(name: string, factory?: Express.Factory<Config<R>>) {
-            const prefix = 'config';
-            return factory
-                ? this.object([prefix, name], factory)
-                : this.object([prefix, name]);
+        config<R>(name: string, factory: Express.Factory<Config<R>>) {
+            return this.object(['config', name], factory);
         },
     });
 });

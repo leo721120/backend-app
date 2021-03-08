@@ -11,11 +11,8 @@ export interface Controller {
 import { Module } from '@leo/app/instance'
 export default Module(async function (app) {
     Object.assign(app, <Express.Application>{
-        controller(name: string, factory?: Express.Factory<Controller>) {
-            const prefix = 'controller';
-            return factory
-                ? this.object([prefix, name], factory)
-                : this.object([prefix, name]);
+        controller(name: string, factory: Express.Factory<Controller>) {
+            return this.object(['controller', name], factory);
         },
     });
 });
