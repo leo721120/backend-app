@@ -54,7 +54,7 @@ declare global {
 export function Module<R>(fn: Module<R>) {
     return fn;
 }
-export async function instance() {
+export async function instance(options?: Partial<Express.Application>) {
     const express = await import('express');
     const now = new Date();
     const app = express();
@@ -141,7 +141,7 @@ export async function instance() {
                         req.cid = () => text;
                     }
                     const log = function (...names: string[]) {
-                        return ctx.log(...names, req.cid());
+                        return app.log(...names, req.cid());
                     };
                     req.log = function () {
                         const obj = log('http');
@@ -184,5 +184,5 @@ export async function instance() {
             ];
         },
     };
-    return Object.assign(app, ctx);
+    return Object.assign(app, ctx, options);
 }

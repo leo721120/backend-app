@@ -1,6 +1,6 @@
 import '@leo/lib/node/promise'
 import '@leo/lib/node/error'
-export async function instance() {
+export async function instance(options?: Partial<Express.Application>) {
     const path = await import('path');
     Object.assign(process.env, <NodeJS.ProcessEnv>{
         WORKDIR: path.resolve(__dirname, '..'),
@@ -8,7 +8,7 @@ export async function instance() {
 
     const { instance } = await import('./instance');
     const assert = await import('assert');
-    const app = await instance();
+    const app = await instance(options);
     console.assert = assert;
     app.use(app.initialize());
     await app.load(await import('@leo/lib/event'));
