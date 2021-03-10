@@ -6,8 +6,10 @@ describe('WS /test', function () {
     afterAll(function () {
         jest.clearAllMocks();
     });
-    describe('message', function () {
-        it('', async function () {
+    testcase('message', global, function ({ given, when, then }) {
+        given;
+        when;
+        then('', async function () {
             const { instance } = await import('@leo/app/domain');
             const app = await instance();
             app.ws('/test', function (ws) {

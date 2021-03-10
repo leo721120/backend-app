@@ -26,7 +26,7 @@ interface Topics {
 interface Callback<K extends keyof Topics> {
     (payload: Topics[K]): void
 }
-interface Connection {
+export interface Connection {
     readonly info?: Readonly<import('mqtt').IClientOptions & {
         subscribe?: {
             [topic: string]: {

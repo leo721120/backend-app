@@ -6,7 +6,7 @@ describe('connection', function () {
     afterAll(function () {
         jest.clearAllMocks();
     });
-    describe('http', function () {
+    testcase('http', global, function ({ ctx, given, when, then }) {
         async function mock(app: import('express').Application) {
             const { createRequest, createResponse } = await import('node-mocks-http');
             const settle = require('axios/lib/core/settle') as (...a: any[]) => any;
@@ -76,16 +76,20 @@ describe('connection', function () {
                 },
             });
         }
-        it('', async function () {
+        given('', async function () {
             const { instance } = await import('@leo/app/domain');
             const app = await instance();
-            const http = app.connection('http');
-            const connection = http.instance(await mock(app));
             app.get('/test', function (_, res) {
                 res.status(200).send({
                     abc: 123,
                 });
             });
+            return app;
+        });
+        when('', async function () {
+            const app = await ctx.given<import('express').Application>('');
+            const http = app.connection('http');
+            const connection = http.instance(await mock(app));
             const res = await connection.fetch<{
                 abc: 123
             }>({
@@ -100,16 +104,29 @@ describe('connection', function () {
                     },
                 },
             });
+            return res;
+        });
+        then('', async function () {
+            const res = await ctx.when<import('axios').AxiosResponse>('');
             expect(res.data).toMatchObject({
                 abc: 123,
             });
         });
     });
-    describe('mqtt', function () {
+    testcase('mqtt', global, function ({ ctx, given, when, then }) {
         const { createServer } = require('net') as typeof import('net');
         const aedes = (require('aedes') as typeof import('aedes'))();
         const broker = createServer(aedes.handle);
-
+        const cb = {
+            cb1: jest.fn(function bindBeforeConnect(payload) {
+                expect(payload).toEqual(expect.any(Buffer));
+            }),
+            cb2: jest.fn(function bindAfterConnect(payload) {
+                expect(payload).toEqual({
+                    123: 456,
+                });
+            }),
+        };
         beforeAll(function (done) {
             broker.listen(done);
         });
@@ -119,16 +136,16 @@ describe('connection', function () {
         afterAll(function closeSocket(done) {
             broker.close(done);
         });
-        it('', async function () {
+        given('', async function () {
             const { instance } = await import('@leo/app/domain');
             const app = await instance();
+            return app;
+        });
+        given('', async function () {
+            const app = await ctx.given<Express.Application>('');
             const mqtt = app.connection('mqtt');
             const address = broker.address() as { port: number };
-
-            const cb1 = jest.fn(function bindBeforeConnect(payload) {
-                expect(payload).toEqual(expect.any(Buffer));
-            });
-            mqtt.once('444/555', cb1);
+            mqtt.once('444/555', cb.cb1);
 
             await mqtt.connect({
                 reconnectPeriod: 0,
@@ -146,31 +163,36 @@ describe('connection', function () {
                     },
                 },
             });
-            const cb2 = jest.fn(function bindAfterConnect(payload) {
-                expect(payload).toEqual({
-                    123: 456,
-                });
+            return mqtt;
+        });
+        given('', async function () {
+            const mqtt = await ctx.given<import('./connection/mqtt').Connection>('');
+            mqtt.once('123/456', cb.cb2);
+            return mqtt;
+        });
+        when('', async function () {
+            const mqtt = await ctx.given<import('./connection/mqtt').Connection>('');
+            const res = await mqtt.publish({
+                topic: '444/555',
+                payload: Buffer.from('12345'),
             });
-            mqtt.once('123/456', cb2);
-            {
-                const res1 = await mqtt.publish({
-                    topic: '444/555',
-                    payload: Buffer.from('12345'),
-                });
-                await res1.waitForReply(200);
-                expect(cb1).toBeCalledTimes(1);
-            }
-            {
-                const res2 = await mqtt.publish({
-                    topic: '123/456',
-                    payload: Buffer.from(JSON.stringify({
-                        123: 456,
-                    })),
-                });
-                await res2.waitForReply(200);
-                expect(cb2).toBeCalledTimes(1);
-            }
-            await mqtt.close();
+            return res.waitForReply(200);
+        });
+        when('', async function () {
+            const mqtt = await ctx.given<import('./connection/mqtt').Connection>('');
+            const res = await mqtt.publish({
+                topic: '123/456',
+                payload: Buffer.from(JSON.stringify({
+                    123: 456,
+                })),
+            });
+            return res.waitForReply(200);
+        });
+        then('', async function() {
+            expect(cb.cb1).toBeCalledTimes(1);
+        });
+        then('', async function() {
+            expect(cb.cb2).toBeCalledTimes(1);
         });
     });
 });
