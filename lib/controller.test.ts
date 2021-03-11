@@ -6,7 +6,7 @@ describe('WS /test', function () {
     afterAll(function () {
         jest.clearAllMocks();
     });
-    testcase('message', global, function ({ given, when, then }) {
+    global.testcase('message', function ({ given, when, then }) {
         given;
         when;
         then('', async function () {

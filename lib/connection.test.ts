@@ -6,7 +6,7 @@ describe('connection', function () {
     afterAll(function () {
         jest.clearAllMocks();
     });
-    testcase('http', global, function ({ ctx, given, when, then }) {
+    global.testcase('http', function ({ ctx, given, when, then }) {
         async function mock(app: import('express').Application) {
             const { createRequest, createResponse } = await import('node-mocks-http');
             const settle = require('axios/lib/core/settle') as (...a: any[]) => any;
@@ -113,7 +113,7 @@ describe('connection', function () {
             });
         });
     });
-    testcase('mqtt', global, function ({ ctx, given, when, then }) {
+    global.testcase('mqtt', function ({ ctx, given, when, then }) {
         const { createServer } = require('net') as typeof import('net');
         const aedes = (require('aedes') as typeof import('aedes'))();
         const broker = createServer(aedes.handle);

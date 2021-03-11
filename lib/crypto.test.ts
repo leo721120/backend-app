@@ -6,7 +6,7 @@ describe('crypto', function () {
     afterAll(function () {
         jest.clearAllMocks();
     });
-    testcase('aes-192-cbc', global, function ({ then }) {
+    global.testcase('aes-192-cbc', function ({ then }) {
         then('', async function () {
             const { instance } = await import('@leo/app/domain');
             const app = await instance();

@@ -20,8 +20,10 @@ export default async (): Promise<Config.InitialOptions> => {
       },
     },
     globals: {
-      testcase: <typeof testcase>function (name, params, cb) {
-        params.describe(name, function () {
+      testcase: <typeof testcase>function (name, cb) {
+        const internal = this;
+        console.assert(internal.describe);
+        internal.describe(name, function () {
           const map = {
             given: new Map<string, Promise<unknown>>(),
             when: new Map<string, Promise<unknown>>(),
@@ -29,17 +31,17 @@ export default async (): Promise<Config.InitialOptions> => {
           };
           cb({
             given(n, cb) {
-              params.beforeAll(function () {
+              internal.beforeAll(function () {
                 return map.given.set(n, cb()).get(n);
               });
             },
             when(n, cb) {
-              params.beforeEach(function () {
+              internal.beforeEach(function () {
                 return map.when.set(n, cb()).get(n);
               });
             },
             then(n, cb) {
-              params.it(n, function () {
+              internal.it(n, function () {
                 return map.then.set(n, cb()).get(n);
               });
             },
@@ -61,7 +63,7 @@ export default async (): Promise<Config.InitialOptions> => {
   };
 };
 declare global {
-  function testcase(name: string, params: typeof global, cb: (options: {
+  function testcase(this: typeof global, name: string, cb: (options: {
     given<R>(name: string, cb: () => Promise<R>): void
     when<R>(name: string, cb: () => Promise<R>): void
     then<R>(name: string, cb: () => Promise<R>): void
