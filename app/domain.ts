@@ -14,6 +14,7 @@ export async function instance(options?: Partial<Express.Application>) {
     await app.load(await import('@leo/lib/event'));
     await app.load(await import('@leo/lib/crypto'));
     await app.load(await import('@leo/lib/crypto/aes'));
+    await app.load(await import('@leo/lib/crypto/keystore'));
     await app.load(await import('@leo/lib/config'));
     await app.load(await import('@leo/lib/config/db'));
     await app.load(await import('@leo/lib/config/doc'));
