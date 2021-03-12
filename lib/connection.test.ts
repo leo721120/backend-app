@@ -188,10 +188,10 @@ describe('connection', function () {
             });
             return res.waitForReply(200);
         });
-        then('', async function() {
+        then('', async function () {
             expect(cb.cb1).toBeCalledTimes(1);
         });
-        then('', async function() {
+        then('', async function () {
             expect(cb.cb2).toBeCalledTimes(1);
         });
     });

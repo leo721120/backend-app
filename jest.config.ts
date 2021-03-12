@@ -20,6 +20,32 @@ export default async (): Promise<Config.InitialOptions> => {
       },
     },
     globals: {
+      teststep<V extends teststeps>(this: typeof global, steps: V): teststep<V> {
+        const global = this;
+        console.assert(global.describe);
+        const map = new Map<keyof V, any>();
+        return {
+          testcase(name, cb) {
+            global.describe(name, () => {
+              cb(this);
+            });
+            return this;
+          },
+          value(name) {
+            console.assert(map.has(name));
+            return map.get(name);
+          },
+          step(name, ...a: any[]) {
+            const step = steps[name];
+            console.assert(typeof step === typeof Function);
+            global.beforeAll(function () {
+              const value = step(...a);
+              return map.set(name, value).get(name);
+            });
+            return this;
+          },
+        };
+      },
       testcase: <typeof testcase>function (name, cb) {
         const internal = this;
         console.assert(internal.describe);
@@ -62,7 +88,16 @@ export default async (): Promise<Config.InitialOptions> => {
     },
   };
 };
+interface teststeps {
+  [name: string]: (...a: any) => any
+}
+interface teststep<V extends teststeps> {
+  testcase(name: string, cb: (teststep: this) => void): this
+  value<K extends keyof V>(name: K): ReturnType<V[K]>
+  step<K extends keyof V>(name: K, ...a: Parameters<V[K]>): this
+}
 declare global {
+  function teststep<V extends teststeps>(this: typeof global, steps: V): teststep<V>
   function testcase(this: typeof global, name: string, cb: (options: {
     given<R>(name: string, cb: () => Promise<R>): void
     when<R>(name: string, cb: () => Promise<R>): void
